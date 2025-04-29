@@ -2,20 +2,29 @@ import React, { createContext, useState, useContext, useEffect } from "react";
 import { Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as SecureStore from "expo-secure-store";
+import {
+  GoogleSignin,
+  GoogleSigninButton,
+  statusCodes,
+  isErrorWithCode,
+  isSuccessResponse,
+  User,
+} from "@react-native-google-signin/google-signin";
+import Constants from "expo-constants";
 
-interface User {
-  phoneNumber: string;
-  userId: string;
-}
+GoogleSignin.configure({
+  webClientId: Constants.expoConfig?.extra?.GOOGLE_SIGNIN_WEB_CLIENT_ID ?? "", // client ID of type WEB for your server. Required to get the `idToken` on the user object, and for offline access.
+  scopes: ["https://www.googleapis.com/auth/drive.readonly"], // what API you want to access on behalf of the user, default is email and profile
+  offlineAccess: true, // if you want to access Google API on behalf of the user FROM YOUR SERVER
+  forceCodeForRefreshToken: true, // [Android] related to `serverAuthCode`, read the docs link below *.
+  iosClientId: Constants.expoConfig?.extra?.GOOGLE_SIGNIN_IOS_CLIENT_ID ?? "", // [iOS] if you want to specify the client ID of type iOS (otherwise, it is taken from GoogleService-Info.plist)
+});
 
 interface AuthContextType {
-  session: string | null;
   user: User | null;
-  loading: boolean;
-  signin: (userData: User) => Promise<void>;
-  signout: () => Promise<void>;
-  verifyOtp: (phoneNumber: string, otp: string) => Promise<boolean>;
-  sendOtp: (phoneNumber: string) => Promise<boolean>;
+  isLoading: boolean;
+  signinWithGoogle: () => Promise<void>;
+  signoutFromGoogle: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -23,109 +32,64 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [loading, setLoading] = useState(true);
-  const [session, setSession] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState<User | null>(null);
 
-  useEffect(() => {
-    // Check if user is logged in on app start
-    const checkLoginState = async () => {
-      try {
-        const storedUser = await SecureStore.getItemAsync("user");
-        const storedSession = await SecureStore.getItemAsync("session");
-
-        if (storedUser && storedSession) {
-          setUser(JSON.parse(storedUser));
-          setSession(storedSession);
-        }
-      } catch (error) {
-        console.error("Error retrieving auth state:", error);
-      } finally {
-        setLoading(false);
+  const signinWithGoogle = async () => {
+    setIsLoading(true);
+    try {
+      await GoogleSignin.hasPlayServices();
+      const response = await GoogleSignin.signIn();
+      if (isSuccessResponse(response)) {
+        // setState({ userInfo: response.data });
+        console.log("User Info response: ", response.data);
+        setUser(response.data);
+      } else {
+        // sign in was cancelled by user
+        setUser(null);
       }
-    };
-
-    checkLoginState();
-  }, []);
-
-  // Mock OTP sending function (replace with actual implementation)
-  const sendOtp = async (phoneNumber: string): Promise<boolean> => {
-    // In a real app, you would call your backend to send an OTP
-    console.log(`Sending OTP to ${phoneNumber}`);
-    // Simulate a network request
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    return true;
-  };
-
-  // Mock OTP verification function (replace with actual implementation)
-  const verifyOtp = async (
-    phoneNumber: string,
-    otp: string
-  ): Promise<boolean> => {
-    // In a real app, you would verify the OTP with your backend
-    console.log(`Verifying OTP ${otp} for ${phoneNumber}`);
-    // Simulate a network request
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    // For demo purposes, any OTP works
-    if (otp.length === 6) {
-      const mockUser = {
-        phoneNumber,
-        userId: `user_${Date.now()}`,
-      };
-      await signin(mockUser);
-      return true;
-    }
-    return false;
-  };
-
-  const signin = async (userData: User) => {
-    try {
-      const newSession = `session_${Date.now()}`;
-      await SecureStore.setItemAsync("user", JSON.stringify(userData));
-      await SecureStore.setItemAsync("session", newSession);
-
-      setUser(userData);
-      setSession(newSession);
     } catch (error) {
-      console.error("Error signing in:", error);
-      throw error;
-    }
-  };
-
-  const signout = async () => {
-    try {
-      await SecureStore.deleteItemAsync("user");
-      await SecureStore.deleteItemAsync("session");
-
+      console.error("error", error);
       setUser(null);
-      setSession(null);
-    } catch (error) {
-      console.error("Error signing out:", error);
-      throw error;
+
+      if (isErrorWithCode(error)) {
+        switch (error.code) {
+          case statusCodes.IN_PROGRESS:
+            // operation (eg. sign in) already in progress
+            break;
+          case statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
+            // Android only, play services not available or outdated
+            break;
+          default:
+          // some other error happened
+        }
+      } else {
+        // an error that's not related to google sign in occurred
+      }
     }
+    setIsLoading(false);
+  };
+
+  const signoutFromGoogle = async () => {
+    setIsLoading(true);
+    try {
+      await GoogleSignin.signOut();
+      setUser(null);
+    } catch (error) {
+      console.error(error);
+    }
+    setIsLoading(false);
   };
 
   const contextData: AuthContextType = {
-    session,
     user,
-    loading,
-    signin,
-    signout,
-    verifyOtp,
-    sendOtp,
+    isLoading,
+    signinWithGoogle,
+    signoutFromGoogle,
   };
 
   return (
-    <AuthContext.Provider value={contextData}>
-      {loading ? (
-        <SafeAreaView className="flex-1 justify-center items-center">
-          <Text className="text-lg">Loading...</Text>
-        </SafeAreaView>
-      ) : (
-        children
-      )}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={contextData}>{children}</AuthContext.Provider>
   );
 };
 

@@ -12,7 +12,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 
 export default function SettingsScreen() {
-  const { signout } = useAuth();
+  const { signoutFromGoogle } = useAuth();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [darkModeEnabled, setDarkModeEnabled] = useState(false);
 
@@ -27,7 +27,7 @@ export default function SettingsScreen() {
         style: "destructive",
         onPress: async () => {
           try {
-            await signout();
+            await signoutFromGoogle();
           } catch (error) {
             Alert.alert("Error", "Failed to sign out. Please try again.");
           }
