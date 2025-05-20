@@ -1,6 +1,8 @@
 import "dotenv/config";
 
 export default ({ config }) => {
+  const googleMapsApiKey = process.env.GOOGLE_MAPS_API_KEY;
+
   return {
     ...config,
     name: "WhereUAt",
@@ -15,6 +17,17 @@ export default ({ config }) => {
       supportsTablet: true,
     },
     android: {
+      permissions: [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+      ],
+      config: {
+        googleMaps: {
+          apiKey: googleMapsApiKey,
+        },
+      },
+
       adaptiveIcon: {
         foregroundImage: "./assets/images/adaptive-icon.png",
         backgroundColor: "#ffffff",
@@ -42,6 +55,13 @@ export default ({ config }) => {
         "@react-native-google-signin/google-signin",
         {
           iosUrlScheme: "com.googleusercontent.apps.1234567890-abcdefg",
+        },
+      ],
+      [
+        "expo-location",
+        {
+          locationAlwaysAndWhenInUsePermission:
+            "Allow $(PRODUCT_NAME) to use your location to share it with your friends.",
         },
       ],
     ],

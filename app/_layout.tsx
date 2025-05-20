@@ -13,26 +13,26 @@ export default function RootLayout() {
 
 // This component handles redirecting unauthenticated users
 function AuthRoot() {
-  const { user, loading } = useAuth();
+  const { user, isLoading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
 
   useEffect(() => {
-    if (loading) return;
+    if (isLoading) return;
 
     // Check if the user is authenticated
     const inAuthGroup = segments[0] === "auth";
 
-    // router.replace("/(tabs)");
+    router.replace("/(tabs)");
 
-    if (!user && !inAuthGroup) {
-      // Redirect to sign-in page if not authenticated
-      router.replace("/auth/signin");
-    } else if (user && inAuthGroup) {
-      // Redirect to main app when authenticated
-      router.replace("/(tabs)");
-    }
-  }, [user, loading, segments]);
+    // if (!user && !inAuthGroup) {
+    //   // Redirect to sign-in page if not authenticated
+    //   router.replace("/auth/signin");
+    // } else if (user && inAuthGroup) {
+    //   // Redirect to main app when authenticated
+    //   router.replace("/(tabs)");
+    // }
+  }, [user, isLoading, segments]);
 
   return <Slot />;
 }
