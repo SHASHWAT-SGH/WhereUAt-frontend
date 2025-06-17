@@ -34,6 +34,26 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  // read token from secure storage on mount
+  useEffect(() => {
+    const fetchStoredUser = async () => {
+      setIsLoading(true);
+      try {
+        const storedUser = await SecureStore.getItemAsync("OAuthTokenResponse");
+        if (storedUser) {
+          setUser(JSON.parse(storedUser));
+        } else {
+          setUser(null);
+        }
+      } catch (error) {
+        console.error("Error fetching stored user:", error);
+        setUser(null);
+      }
+      setIsLoading(false);
+    };
+
+    fetchStoredUser();
+  }, []);
 
   const signinWithGoogle = async () => {
     setIsLoading(true);
@@ -41,12 +61,18 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       await GoogleSignin.hasPlayServices();
       const response = await GoogleSignin.signIn();
       if (isSuccessResponse(response)) {
-        // setState({ userInfo: response.data });
         console.log("User Info response: ", response.data);
         setUser(response.data);
+        // store into secure storage
+        await SecureStore.setItemAsync(
+          "OAuthTokenResponse",
+          JSON.stringify(response.data)
+        );
       } else {
         // sign in was cancelled by user
         setUser(null);
+        // remove from secure storage
+        await SecureStore.deleteItemAsync("OAuthTokenResponse");
       }
     } catch (error) {
       console.error("error", error);
