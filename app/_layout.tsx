@@ -24,20 +24,20 @@ function AuthRoot() {
     const inAuthGroup = segments[0] === "auth";
     const inTabsGroup = segments[0] === "(tabs)";
 
-    if (!user && !inAuthGroup && !inTabsGroup) {
-      // router.replace("/auth/signin");
-      router.replace("/(tabs)");
-    } else if (user && !inTabsGroup) {
-      router.replace("/(tabs)");
-    }
-
-    // if (!user && !inAuthGroup) {
-    //   // Redirect to sign-in page if not authenticated
-    //   router.replace("/auth/signin");
-    // } else if (user && inAuthGroup) {
-    //   // Redirect to main app when authenticated
+    // if (!user && !inAuthGroup && !inTabsGroup) {
+    //   // router.replace("/auth/signin");
+    //   router.replace("/(tabs)");
+    // } else if (user && !inTabsGroup) {
     //   router.replace("/(tabs)");
     // }
+
+    if (!user && !inAuthGroup) {
+      // Redirect to sign-in page if not authenticated
+      router.replace("/auth/signin");
+    } else if (user && inAuthGroup) {
+      // Redirect to main app when authenticated
+      router.replace("/(tabs)");
+    }
   }, [user, isLoading, segments]);
 
   return <Slot />;
