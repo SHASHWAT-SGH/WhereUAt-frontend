@@ -22,8 +22,14 @@ function AuthRoot() {
 
     // Check if the user is authenticated
     const inAuthGroup = segments[0] === "auth";
+    const inTabsGroup = segments[0] === "(tabs)";
 
-    router.replace("/(tabs)");
+    if (!user && !inAuthGroup && !inTabsGroup) {
+      // router.replace("/auth/signin");
+      router.replace("/(tabs)");
+    } else if (user && !inTabsGroup) {
+      router.replace("/(tabs)");
+    }
 
     // if (!user && !inAuthGroup) {
     //   // Redirect to sign-in page if not authenticated
