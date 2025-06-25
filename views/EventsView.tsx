@@ -60,8 +60,12 @@ const EventsView = ({
         <>
           <View style={styles.emptyImgContainer}>
             <Image
-              source={require("../../assets/images/empty-removebg-preview.png")}
-              style={{ width: "60%", height: "60%", borderRadius: 16 }}
+              source={require("@/assets/images/no-event.png")}
+              resizeMode="contain"
+              style={{
+                width: "100%",
+                height: "100%",
+              }}
             />
           </View>
         </>

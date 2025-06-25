@@ -3,6 +3,7 @@ import * as Location from "expo-location";
 import React, { useEffect, useState } from "react";
 import { Keyboard, KeyboardEvent, StyleSheet } from "react-native";
 import { MapPressEvent } from "react-native-maps";
+import api from "@/utils/axiosInstance";
 
 const EventsScreen = () => {
   const [isVisible, setIsVisible] = useState<boolean>(false);
@@ -22,6 +23,24 @@ const EventsScreen = () => {
 
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [events, setEvents] = useState(null);
+
+  const fetchEvents = async () => {
+    try {
+      const response = await api.get("/api/v1/event/get-all-events");
+      if (response.status === 200) {
+        setEvents(response.data);
+        console.log("Fetched Events: ", response.data);
+      } else {
+        console.error("Failed to fetch events:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error fetching events:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchEvents();
+  }, []);
 
   useEffect(() => {
     async function getCurrentLocation() {
