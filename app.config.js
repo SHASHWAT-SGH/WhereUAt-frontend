@@ -80,6 +80,7 @@ export default ({ config }) => {
       GOOGLE_SIGNIN_IOS_URL_SCHEME: process.env.GOOGLE_SIGNIN_IOS_URL_SCHEME,
       GOOGLE_SIGNIN_ANDROID_CLIENT_ID:
         process.env.GOOGLE_SIGNIN_ANDROID_CLIENT_ID,
+      SERVER_URL: process.env.SERVER_URL,
     },
   };
 };

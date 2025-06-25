@@ -4,13 +4,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import MapView, { MapPressEvent, Marker } from "react-native-maps";
 import { useEffect, useState } from "react";
 import * as Location from "expo-location";
-import Constants from "expo-constants";
-import { Client } from "@stomp/stompjs";
 
 export default function HomeScreen() {
-  const SERVER_URL =
-    Constants.expoConfig?.extra?.SERVER_URL || "http://localhost:8080";
-
   const { user } = useAuth();
   const [location, setLocation] = useState<Location.LocationObject | null>(
     null
@@ -46,57 +41,6 @@ export default function HomeScreen() {
     });
     console.log("Tapped Location: ", coordinate);
   };
-
-  // -------------- Socket --------------
-  const [othersLocation, setOthersLocation] = useState<null>(null);
-  const [stompClient, setStompClient] = useState<Client | null>(null);
-
-  const eventId = "123"; // Replace with actual event ID
-  useEffect(() => {
-    let locationSubscription: Location.LocationSubscription;
-
-    async function startTracking() {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") return;
-
-      const currentLocation = await Location.getCurrentPositionAsync({});
-      setLocation(currentLocation);
-
-      locationSubscription = await Location.watchPositionAsync(
-        {
-          accuracy: Location.Accuracy.High,
-          timeInterval: 5000,
-          distanceInterval: 10,
-        },
-        (loc) => {
-          setLocation(loc);
-          if (stompClient?.connected) {
-            const now = new Date();
-            const date = now.toISOString().split("T")[0]; // yyyy-MM-dd
-            const time = now.toTimeString().split(" ")[0]; // HH:mm:ss
-            const message = {
-              userId: user?.user.id,
-              eventId,
-              latitude: loc.coords.latitude,
-              longitude: loc.coords.longitude,
-              date: date,
-              time: time,
-            };
-            stompClient.publish({
-              destination: "/app/location.update",
-              body: JSON.stringify(message),
-            });
-          }
-        }
-      );
-    }
-
-    startTracking();
-
-    return () => {
-      locationSubscription?.remove();
-    };
-  }, [stompClient]);
 
   return (
     <SafeAreaView style={styles.container}>
