@@ -1,5 +1,7 @@
 import BottomSheetAddEvent from "@/components/BottomSheetAddEvent";
 import EventCard from "@/components/EventCard";
+import FadedLineText from "@/components/FadedLineText";
+import FilterBar from "@/components/FilterBar";
 import { Ionicons } from "@expo/vector-icons";
 import { LocationObject } from "expo-location";
 import React from "react";
@@ -56,6 +58,10 @@ const EventsView = ({
   return (
     <SafeAreaView style={styles.container}>
       {/* events */}
+
+      <FadedLineText text="All Events" />
+      <FilterBar />
+
       {!events || events.length === 0 ? (
         <>
           <View style={styles.emptyImgContainer}>
@@ -120,8 +126,9 @@ export default EventsView;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f7ff",
+    backgroundColor: "white",
     padding: 16,
+    paddingTop: 6,
   },
 
   addIcon: {
