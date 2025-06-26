@@ -1,9 +1,12 @@
 import EventsView from "@/views/EventsView";
 import * as Location from "expo-location";
-import React, { useEffect, useState } from "react";
-import { Keyboard, KeyboardEvent, StyleSheet } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { Animated, Keyboard, KeyboardEvent, StyleSheet } from "react-native";
 import { MapPressEvent } from "react-native-maps";
 import api from "@/utils/axiosInstance";
+import Header from "@/components/Header";
+import { getCurrentLocation } from "@/utils/getCurrentLocation";
+import { getNoEventsFoundTag } from "@/utils/getNoEventsFoundTags";
 
 const EventsScreen = () => {
   const [isVisible, setIsVisible] = useState<boolean>(false);
@@ -24,6 +27,10 @@ const EventsScreen = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [events, setEvents] = useState(null);
 
+  const [noEventsFoundTag, setNoEventsFoundTag] = useState(
+    getNoEventsFoundTag()
+  );
+
   const fetchEvents = async () => {
     try {
       const response = await api.get("/api/v1/event/get-all-events");
@@ -43,21 +50,18 @@ const EventsScreen = () => {
   }, []);
 
   useEffect(() => {
-    async function getCurrentLocation() {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        setErrorMsg("Permission to access location was denied");
-        return;
+    const handleGetLocation = async () => {
+      try {
+        const location = await getCurrentLocation();
+        setLocation(location);
+        console.log("location", location);
+      } catch (error: any) {
+        setErrorMsg(error.message);
+        console.error("Location Error:", error.message);
       }
+    };
 
-      let location: Location.LocationObject =
-        await Location.getCurrentPositionAsync({});
-      console.log("Location: ", location);
-
-      setLocation(location);
-    }
-
-    getCurrentLocation();
+    handleGetLocation();
   }, []);
 
   useEffect(() => {
@@ -90,24 +94,29 @@ const EventsScreen = () => {
   };
 
   return (
-    <EventsView
-      isVisible={isVisible}
-      setIsVisible={setIsVisible}
-      isDateModalVisible={isDateModalVisible}
-      setDateModalIsVisible={setDateModalIsVisible}
-      date={date}
-      setDate={setDate}
-      isTimeModalVisible={isTimeModalVisible}
-      setTimeModalIsVisible={setTimeModalIsVisible}
-      time={time}
-      setTime={setTime}
-      handleMapPress={handleMapPress}
-      location={location}
-      selectedLocation={selectedLocation}
-      bottomSheetHeight={bottomSheetHeight}
-      setBottomSheetHeight={setBottomSheetHeight}
-      events={events}
-    />
+    <>
+      <Header location={location} />
+      <EventsView
+        isVisible={isVisible}
+        setIsVisible={setIsVisible}
+        isDateModalVisible={isDateModalVisible}
+        setDateModalIsVisible={setDateModalIsVisible}
+        date={date}
+        setDate={setDate}
+        isTimeModalVisible={isTimeModalVisible}
+        setTimeModalIsVisible={setTimeModalIsVisible}
+        time={time}
+        setTime={setTime}
+        handleMapPress={handleMapPress}
+        location={location}
+        selectedLocation={selectedLocation}
+        bottomSheetHeight={bottomSheetHeight}
+        setBottomSheetHeight={setBottomSheetHeight}
+        events={events}
+        noEventsFoundTag={noEventsFoundTag}
+        setNoEventsFoundTag={setNoEventsFoundTag}
+      />
+    </>
   );
 };
 

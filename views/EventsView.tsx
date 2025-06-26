@@ -1,12 +1,18 @@
 import BottomSheetAddEvent from "@/components/BottomSheetAddEvent";
 import EventCard from "@/components/EventCard";
+import FadedLineText from "@/components/FadedLineText";
+import FilterBar from "@/components/FilterBar";
+import { getNoEventsFoundTag } from "@/utils/getNoEventsFoundTags";
 import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect } from "@react-navigation/native";
 import { LocationObject } from "expo-location";
-import React from "react";
+import React, { useEffect } from "react";
 import {
+  Animated,
   Image,
   ScrollView,
   StyleSheet,
+  Text,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -33,6 +39,8 @@ interface props {
   bottomSheetHeight: number;
   setBottomSheetHeight: (height: number) => void;
   events: any;
+  noEventsFoundTag: String;
+  setNoEventsFoundTag: (fun: any) => void;
 }
 
 const EventsView = ({
@@ -52,21 +60,32 @@ const EventsView = ({
   bottomSheetHeight,
   setBottomSheetHeight,
   events,
+  noEventsFoundTag,
+  setNoEventsFoundTag,
 }: props) => {
+  useEffect(() => {
+    setNoEventsFoundTag(getNoEventsFoundTag());
+  }, []);
+
   return (
     <SafeAreaView style={styles.container}>
       {/* events */}
+
+      <FadedLineText text="All Events" />
+      <FilterBar />
+
       {!events || events.length === 0 ? (
         <>
           <View style={styles.emptyImgContainer}>
             <Image
-              source={require("@/assets/images/no-event.png")}
+              source={require("@/assets/images/no-events-calender.png")}
               resizeMode="contain"
               style={{
-                width: "100%",
-                height: "100%",
+                width: "50%",
+                height: "50%",
               }}
             />
+            <Text style={[styles.noEventText]}>{noEventsFoundTag}</Text>
           </View>
         </>
       ) : (
@@ -120,8 +139,9 @@ export default EventsView;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f7ff",
+    backgroundColor: "white",
     padding: 16,
+    paddingTop: 6,
   },
 
   addIcon: {
@@ -136,7 +156,14 @@ const styles = StyleSheet.create({
 
   emptyImgContainer: {
     flex: 1,
-    justifyContent: "center",
     alignItems: "center",
+    marginTop: 80,
+  },
+  noEventText: {
+    fontSize: 16,
+    color: "#4b5563",
+    textAlign: "center",
+    marginTop: 8,
+    paddingHorizontal: 20,
   },
 });
