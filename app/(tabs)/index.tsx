@@ -1,11 +1,12 @@
 import EventsView from "@/views/EventsView";
 import * as Location from "expo-location";
-import React, { useEffect, useState } from "react";
-import { Keyboard, KeyboardEvent, StyleSheet } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { Animated, Keyboard, KeyboardEvent, StyleSheet } from "react-native";
 import { MapPressEvent } from "react-native-maps";
 import api from "@/utils/axiosInstance";
 import Header from "@/components/Header";
 import { getCurrentLocation } from "@/utils/getCurrentLocation";
+import { getNoEventsFoundTag } from "@/utils/getNoEventsFoundTags";
 
 const EventsScreen = () => {
   const [isVisible, setIsVisible] = useState<boolean>(false);
@@ -25,6 +26,10 @@ const EventsScreen = () => {
 
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [events, setEvents] = useState(null);
+
+  const [noEventsFoundTag, setNoEventsFoundTag] = useState(
+    getNoEventsFoundTag()
+  );
 
   const fetchEvents = async () => {
     try {
@@ -108,6 +113,8 @@ const EventsScreen = () => {
         bottomSheetHeight={bottomSheetHeight}
         setBottomSheetHeight={setBottomSheetHeight}
         events={events}
+        noEventsFoundTag={noEventsFoundTag}
+        setNoEventsFoundTag={setNoEventsFoundTag}
       />
     </>
   );

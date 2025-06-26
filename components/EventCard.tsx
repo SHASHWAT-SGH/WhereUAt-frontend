@@ -109,7 +109,7 @@ export default EventCard;
 
 const styles = StyleSheet.create({
   eventCard: {
-    backgroundColor: "white",
+    backgroundColor: "#dee7fc",
     borderRadius: 12,
     overflow: "hidden",
     marginBottom: 12,
