@@ -1,3 +1,4 @@
+import AddedUser from "@/components/AddedUser";
 import ZoomableCard from "@/components/ZoomableCard";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { LocationObject } from "expo-location";
@@ -186,6 +187,30 @@ const AddEventView = ({
           />
         </ZoomableCard>
 
+        <Text style={styles.formText}>Add People</Text>
+        <TextInput
+          style={styles.inputBox}
+          placeholder="Enter email or username"
+          placeholderTextColor="#A2A2A2"
+        />
+        <>
+          <AddedUser
+            name="Shashwat Singh"
+            email="vnsshashwat@gmail.com"
+            imageUri="https://cdn-icons-png.flaticon.com/512/9187/9187604.png"
+          />
+          <AddedUser
+            name="Shashwat Singh"
+            email="vnsshashwat@gmail.com"
+            imageUri="https://cdn-icons-png.flaticon.com/512/9187/9187604.png"
+          />
+          <AddedUser
+            name="Shashwat Singh"
+            email="vnsshashwat@gmail.com"
+            imageUri="https://cdn-icons-png.flaticon.com/512/9187/9187604.png"
+          />
+        </>
+
         <TouchableOpacity
           style={styles.button}
           onPress={() => {
@@ -239,5 +264,5 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     overflow: "hidden",
   },
-  map: { width: "100%", height: 100 },
+  map: { width: "100%", height: 100, marginBottom: 10 },
 });
