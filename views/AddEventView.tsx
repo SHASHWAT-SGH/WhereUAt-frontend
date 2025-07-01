@@ -3,6 +3,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { LocationObject } from "expo-location";
 import React from "react";
 import {
+  LayoutRectangle,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -28,6 +29,7 @@ interface props {
     latitude: number;
     longitude: number;
   } | null;
+  onZoomRequest: (origin: LayoutRectangle, content: React.ReactNode) => void;
 }
 
 const AddEventView = ({
@@ -42,6 +44,7 @@ const AddEventView = ({
   handleMapPress,
   location,
   selectedLocation,
+  onZoomRequest,
 }: props) => {
   return (
     <>
@@ -169,6 +172,20 @@ const AddEventView = ({
             )}
           </MapView> */}
         </View>
+
+        {/* Use the updated ZoomableCard */}
+        <ZoomableCard onZoomRequest={onZoomRequest}>
+          <MapView
+            style={styles.map} // Keep the height here for the minimized view
+            initialRegion={{
+              latitude: 28.6139,
+              longitude: 77.209,
+              latitudeDelta: 0.0922,
+              longitudeDelta: 0.0421,
+            }}
+          />
+        </ZoomableCard>
+
         <TouchableOpacity
           style={styles.button}
           onPress={() => {
@@ -178,17 +195,6 @@ const AddEventView = ({
         >
           <Text style={styles.buttonText}>Create Event</Text>
         </TouchableOpacity>
-        <ZoomableCard>
-          <MapView
-            style={{ width: "100%", height: 150, borderRadius: 12 }} // Apply height here for the minimized state
-            initialRegion={{
-              latitude: 28.6139,
-              longitude: 77.209,
-              latitudeDelta: 0.0922,
-              longitudeDelta: 0.0421,
-            }}
-          />
-        </ZoomableCard>
       </ScrollView>
     </>
   );
@@ -233,5 +239,5 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     overflow: "hidden",
   },
-  map: { width: "100%", borderRadius: 12 },
+  map: { width: "100%", height: 100 },
 });

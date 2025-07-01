@@ -1,7 +1,8 @@
+import ZoomOverlay from "@/components/ZoomOverlay";
 import AddEventView from "@/views/AddEventView";
 import * as Location from "expo-location";
 import React, { useState } from "react";
-import { StyleSheet } from "react-native";
+import { LayoutRectangle, StyleSheet, View } from "react-native";
 import { MapPressEvent } from "react-native-maps";
 
 const AddEvent = () => {
@@ -20,6 +21,23 @@ const AddEvent = () => {
 
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  const [overlayData, setOverlayData] = useState<{
+    origin: LayoutRectangle;
+    content: React.ReactNode;
+  } | null>(null);
+
+  const handleZoomRequest = (
+    origin: LayoutRectangle,
+    content: React.ReactNode
+  ) => {
+    setOverlayData({ origin, content });
+  };
+
+  const handleCloseOverlay = () => {
+    // This function is now called by ZoomOverlay *after* its exit animation completes.
+    setOverlayData(null); // This will then unmount the ZoomOverlay
+  };
+
   const handleMapPress = (event: MapPressEvent) => {
     const { coordinate } = event.nativeEvent;
     setSelectedLocation({
@@ -30,22 +48,28 @@ const AddEvent = () => {
   };
 
   return (
-    <AddEventView
-      isDateModalVisible={isDateModalVisible}
-      setDateModalIsVisible={setDateModalIsVisible}
-      date={date}
-      setDate={setDate}
-      isTimeModalVisible={isTimeModalVisible}
-      setTimeModalIsVisible={setTimeModalIsVisible}
-      time={time}
-      setTime={setTime}
-      handleMapPress={handleMapPress}
-      location={location}
-      selectedLocation={selectedLocation}
-    />
+    <View style={{ flex: 1 }}>
+      <AddEventView
+        isDateModalVisible={isDateModalVisible}
+        setDateModalIsVisible={setDateModalIsVisible}
+        date={date}
+        setDate={setDate}
+        isTimeModalVisible={isTimeModalVisible}
+        setTimeModalIsVisible={setTimeModalIsVisible}
+        time={time}
+        setTime={setTime}
+        handleMapPress={handleMapPress}
+        location={location}
+        selectedLocation={selectedLocation}
+        onZoomRequest={handleZoomRequest}
+      />
+      {overlayData && (
+        <ZoomOverlay origin={overlayData.origin} onClose={handleCloseOverlay}>
+          {overlayData.content}
+        </ZoomOverlay>
+      )}
+    </View>
   );
 };
 
 export default AddEvent;
-
-const styles = StyleSheet.create({});
