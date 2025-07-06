@@ -62,7 +62,9 @@ const EventsView = ({
         <>
           <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
             <View style={{ flex: 1 }}>
-              <EventCard />
+              {events.map((event: any, idx: number) => (
+                <EventCard key={event.id || idx} />
+              ))}
             </View>
           </ScrollView>
         </>

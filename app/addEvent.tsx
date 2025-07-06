@@ -1,7 +1,11 @@
 import ZoomOverlay from "@/components/ZoomOverlay";
+import { EventFormData } from "@/types/EventFormData";
+import api from "@/utils/axiosInstance";
+import { getCurrentLocation } from "@/utils/getCurrentLocation";
+import { reverseGeocode } from "@/utils/reverseGeocode";
 import AddEventView from "@/views/AddEventView";
 import * as Location from "expo-location";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { LayoutRectangle, StyleSheet, View } from "react-native";
 import { MapPressEvent } from "react-native-maps";
 
@@ -19,12 +23,31 @@ const AddEvent = () => {
     longitude: number;
   } | null>(null);
 
+  const [selectedLocationAddress, setSelectedLocationAddress] = useState<
+    string | null
+  >(null);
+
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const [overlayData, setOverlayData] = useState<{
     origin: LayoutRectangle;
     content: React.ReactNode;
   } | null>(null);
+
+  const [isAddingEvent, setIsAddingEvent] = useState<boolean>(false);
+
+  const [formData, setFormData] = useState<EventFormData>({
+    eventName: "",
+    eventDescription: "",
+    eventLatitude: 0,
+    eventLongitude: 0,
+    eventTimeStamp: new Date(),
+    eventImageUrl: "",
+    eventOrganizerId: "",
+    eventMembersId: [],
+  });
+
+  const [searchedUsers, setSearchedUsers] = useState(null);
 
   const handleZoomRequest = (
     origin: LayoutRectangle,
@@ -44,8 +67,74 @@ const AddEvent = () => {
       latitude: coordinate.latitude,
       longitude: coordinate.longitude,
     });
+
+    setFormData((prevData) => ({
+      ...prevData,
+      eventLatitude: coordinate.latitude,
+      eventLongitude: coordinate.longitude,
+    }));
+
     console.log("Tapped Location: ", coordinate);
   };
+
+  const createEvent = async () => {
+    setIsAddingEvent(true);
+    try {
+      const response = await api.post("/api/v1/event/create", formData);
+      if (response.status === 200) {
+        console.log("Created event: ", response.data);
+      } else {
+        console.error("Failed creating event:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error creating event:", error);
+    }
+    setIsAddingEvent(false);
+  };
+
+  const searchUser = async (query: string) => {
+    if (query.length < 1) {
+      setSearchedUsers(null);
+      return;
+    }
+    try {
+      const response = await api.get(`/api/v1/user/search/${query}`);
+      if (response.status === 200) {
+        if (response.data.length === 0) {
+          setSearchedUsers(null);
+        } else {
+          setSearchedUsers(response.data);
+        }
+      } else {
+        console.error("Failed to search users:", response.statusText);
+        setSearchedUsers(null);
+      }
+    } catch (error) {
+      console.error("Error searching users:", error);
+      setSearchedUsers(null);
+    }
+  };
+
+  const handleAddUserPressed = (userId: string) => {
+    setFormData((prevData) => ({
+      ...prevData,
+      eventMembersId: [...prevData.eventMembersId, userId],
+    }));
+  };
+
+  useEffect(() => {
+    const handleGetSelectedLocationAddress = async () => {
+      try {
+        const address = await reverseGeocode(selectedLocation);
+        if (address) {
+          const formattedAddress = address.formattedAddress;
+          setSelectedLocationAddress(formattedAddress);
+        }
+      } catch (error: any) {}
+    };
+
+    handleGetSelectedLocationAddress();
+  }, [selectedLocation]);
 
   return (
     <View style={{ flex: 1 }}>
@@ -62,6 +151,13 @@ const AddEvent = () => {
         location={location}
         selectedLocation={selectedLocation}
         onZoomRequest={handleZoomRequest}
+        createEvent={createEvent}
+        isAddingEvent={isAddingEvent}
+        setFormData={setFormData}
+        selectedLocationAddress={selectedLocationAddress}
+        searchUser={searchUser}
+        searchedUsers={searchedUsers}
+        handleAddUserPressed={handleAddUserPressed}
       />
       {overlayData && (
         <ZoomOverlay origin={overlayData.origin} onClose={handleCloseOverlay}>

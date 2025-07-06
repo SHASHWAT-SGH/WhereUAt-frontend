@@ -1,9 +1,12 @@
 import AddedUser from "@/components/AddedUser";
+import FadedLineText from "@/components/FadedLineText";
 import ZoomableCard from "@/components/ZoomableCard";
+import { EventFormData } from "@/types/EventFormData";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { LocationObject } from "expo-location";
 import React from "react";
 import {
+  ActivityIndicator,
   LayoutRectangle,
   Pressable,
   ScrollView,
@@ -31,6 +34,15 @@ interface props {
     longitude: number;
   } | null;
   onZoomRequest: (origin: LayoutRectangle, content: React.ReactNode) => void;
+  createEvent: () => Promise<void>;
+  isAddingEvent: boolean;
+  setFormData: (
+    data: EventFormData | ((prevData: EventFormData) => EventFormData)
+  ) => void;
+  selectedLocationAddress: string | null;
+  searchUser: (query: string) => Promise<void>;
+  searchedUsers: any; // Adjust type as needed
+  handleAddUserPressed: (userId: string) => void; // Function to handle adding a user
 }
 
 const AddEventView = ({
@@ -46,6 +58,13 @@ const AddEventView = ({
   location,
   selectedLocation,
   onZoomRequest,
+  createEvent,
+  isAddingEvent,
+  setFormData,
+  selectedLocationAddress,
+  searchUser,
+  searchedUsers,
+  handleAddUserPressed,
 }: props) => {
   return (
     <>
@@ -58,7 +77,15 @@ const AddEventView = ({
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.formText}>Event Name</Text>
-        <TextInput style={styles.inputBox} />
+        <TextInput
+          style={styles.inputBox}
+          onChangeText={(text) => {
+            setFormData((prevData) => ({
+              ...prevData,
+              eventName: text,
+            }));
+          }}
+        />
 
         <Text style={styles.formText}>Event Description</Text>
         <TextInput
@@ -66,6 +93,12 @@ const AddEventView = ({
           multiline={true}
           numberOfLines={3}
           maxLength={200}
+          onChangeText={(text) => {
+            setFormData((prevData) => ({
+              ...prevData,
+              eventDescription: text,
+            }));
+          }}
         />
 
         <Text style={styles.formText}>Event Date</Text>
@@ -92,7 +125,16 @@ const AddEventView = ({
             onChange={(event, selectedDate) => {
               setDateModalIsVisible(false);
               if (selectedDate) {
+                const updated = new Date(date);
+                updated.setFullYear(selectedDate.getFullYear());
+                updated.setMonth(selectedDate.getMonth());
+                updated.setDate(selectedDate.getDate());
+
                 setDate(selectedDate);
+                setFormData((prevData) => ({
+                  ...prevData,
+                  eventTimeStamp: updated,
+                }));
               }
             }}
           />
@@ -123,16 +165,33 @@ const AddEventView = ({
             onChange={(event, selectedTime) => {
               setTimeModalIsVisible(false);
               if (selectedTime) {
+                const updated = new Date(time);
+                updated.setHours(selectedTime.getHours());
+                updated.setMinutes(selectedTime.getMinutes());
+                updated.setSeconds(selectedTime.getSeconds());
+                updated.setMilliseconds(0);
+
                 setTime(selectedTime);
+                setFormData((prevData) => ({
+                  ...prevData,
+                  eventTime: updated,
+                }));
               }
             }}
           />
         )}
 
         {/* Maps */}
-        <Text style={styles.formText}>Event Location</Text>
-        <View style={styles.wrapper}>
-          {/* <MapView
+        <View style={{ flexDirection: "row", gap: 6 }}>
+          <Text style={styles.formText}>
+            Event Location {selectedLocation ? ":" : ""}
+          </Text>
+          <Text style={styles.formText}>{selectedLocationAddress || ""}</Text>
+        </View>
+
+        {/* Use the updated ZoomableCard */}
+        <ZoomableCard onZoomRequest={onZoomRequest}>
+          <MapView
             style={styles.map}
             provider="google"
             initialRegion={
@@ -157,7 +216,6 @@ const AddEventView = ({
             showsIndoors={true}
             showsBuildings={true}
             showsScale={true}
-            zoomControlEnabled={true}
             zoomTapEnabled={true}
             onPress={handleMapPress}
           >
@@ -171,20 +229,7 @@ const AddEventView = ({
                 description={`Lat: ${selectedLocation.latitude}, Lng: ${selectedLocation.longitude}`}
               />
             )}
-          </MapView> */}
-        </View>
-
-        {/* Use the updated ZoomableCard */}
-        <ZoomableCard onZoomRequest={onZoomRequest}>
-          <MapView
-            style={styles.map} // Keep the height here for the minimized view
-            initialRegion={{
-              latitude: 28.6139,
-              longitude: 77.209,
-              latitudeDelta: 0.0922,
-              longitudeDelta: 0.0421,
-            }}
-          />
+          </MapView>
         </ZoomableCard>
 
         <Text style={styles.formText}>Add People</Text>
@@ -192,33 +237,41 @@ const AddEventView = ({
           style={styles.inputBox}
           placeholder="Enter email or username"
           placeholderTextColor="#A2A2A2"
+          onChangeText={(text) => {
+            searchUser(text);
+          }}
         />
-        <>
-          <AddedUser
-            name="Shashwat Singh"
-            email="vnsshashwat@gmail.com"
-            imageUri="https://cdn-icons-png.flaticon.com/512/9187/9187604.png"
-          />
-          <AddedUser
-            name="Shashwat Singh"
-            email="vnsshashwat@gmail.com"
-            imageUri="https://cdn-icons-png.flaticon.com/512/9187/9187604.png"
-          />
-          <AddedUser
-            name="Shashwat Singh"
-            email="vnsshashwat@gmail.com"
-            imageUri="https://cdn-icons-png.flaticon.com/512/9187/9187604.png"
-          />
-        </>
+        {searchedUsers && searchedUsers.length > 0 ? (
+          searchedUsers.map((user: any) => (
+            <AddedUser
+              key={user.id}
+              name={user.firstName + " " + user.lastName}
+              email={user.userEmail}
+              imageUri="https://cdn-icons-png.flaticon.com/512/9187/9187604.png"
+              onPress={() => handleAddUserPressed(user.id)}
+            />
+          ))
+        ) : (
+          <Text style={{ color: "#A2A2A2" }}>No users found</Text>
+        )}
+
+        <FadedLineText text="Selected Users" />
+        {}
 
         <TouchableOpacity
           style={styles.button}
+          disabled={isAddingEvent}
           onPress={() => {
             // Handle form submission logic here
+            createEvent();
             console.log("Event Created");
           }}
         >
-          <Text style={styles.buttonText}>Create Event</Text>
+          {isAddingEvent ? (
+            <ActivityIndicator color={"white"} size={16} />
+          ) : (
+            <Text style={styles.buttonText}>Create Event</Text>
+          )}
         </TouchableOpacity>
       </ScrollView>
     </>

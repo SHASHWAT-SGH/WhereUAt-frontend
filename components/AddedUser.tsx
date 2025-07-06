@@ -1,15 +1,16 @@
-import { StyleSheet, Text, View, Image } from "react-native";
+import { StyleSheet, Text, View, Image, Pressable } from "react-native";
 import React from "react";
 
 type Props = {
   name: string;
   email: string;
   imageUri: string;
+  onPress?: () => void; // Optional prop for future use
 };
 
-const AddedUser = ({ name, email, imageUri }: Props) => {
+const AddedUser = ({ name, email, imageUri, onPress }: Props) => {
   return (
-    <View style={styles.card}>
+    <Pressable style={styles.card} onPress={onPress || (() => {})}>
       <Image source={{ uri: imageUri }} style={styles.avatar} />
       <View style={styles.info}>
         <Text style={styles.name} numberOfLines={1}>
@@ -19,7 +20,7 @@ const AddedUser = ({ name, email, imageUri }: Props) => {
           {email}
         </Text>
       </View>
-    </View>
+    </Pressable>
   );
 };
 
