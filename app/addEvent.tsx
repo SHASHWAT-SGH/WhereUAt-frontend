@@ -153,6 +153,7 @@ const AddEvent = () => {
         onZoomRequest={handleZoomRequest}
         createEvent={createEvent}
         isAddingEvent={isAddingEvent}
+        formData={formData}
         setFormData={setFormData}
         selectedLocationAddress={selectedLocationAddress}
         searchUser={searchUser}

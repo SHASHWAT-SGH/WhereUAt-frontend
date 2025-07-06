@@ -36,6 +36,7 @@ interface props {
   onZoomRequest: (origin: LayoutRectangle, content: React.ReactNode) => void;
   createEvent: () => Promise<void>;
   isAddingEvent: boolean;
+  formData: EventFormData;
   setFormData: (
     data: EventFormData | ((prevData: EventFormData) => EventFormData)
   ) => void;
@@ -60,6 +61,7 @@ const AddEventView = ({
   onZoomRequest,
   createEvent,
   isAddingEvent,
+  formData,
   setFormData,
   selectedLocationAddress,
   searchUser,
@@ -174,7 +176,7 @@ const AddEventView = ({
                 setTime(selectedTime);
                 setFormData((prevData) => ({
                   ...prevData,
-                  eventTime: updated,
+                  eventTimeStamp: updated,
                 }));
               }
             }}
@@ -248,6 +250,7 @@ const AddEventView = ({
               name={user.firstName + " " + user.lastName}
               email={user.userEmail}
               imageUri="https://cdn-icons-png.flaticon.com/512/9187/9187604.png"
+              isSelected={formData.eventMembersId.includes(user.id)}
               onPress={() => handleAddUserPressed(user.id)}
             />
           ))
@@ -256,7 +259,13 @@ const AddEventView = ({
         )}
 
         <FadedLineText text="Selected Users" />
-        {}
+        <View style={{ gap: 10, marginTop: 10 }}>
+          {formData.eventMembersId.map((userId, index) => (
+            <Text key={index} style={{ color: "#444" }}>
+              • User ID: {userId}
+            </Text>
+          ))}
+        </View>
 
         <TouchableOpacity
           style={styles.button}

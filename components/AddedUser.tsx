@@ -5,12 +5,18 @@ type Props = {
   name: string;
   email: string;
   imageUri: string;
+  isSelected: boolean;
   onPress?: () => void; // Optional prop for future use
 };
 
-const AddedUser = ({ name, email, imageUri, onPress }: Props) => {
+const AddedUser = ({ name, email, imageUri, isSelected, onPress }: Props) => {
+  console.log(isSelected);
+
   return (
-    <Pressable style={styles.card} onPress={onPress || (() => {})}>
+    <Pressable
+      style={[styles.card, isSelected ? { backgroundColor: "#dee7fc" } : null]}
+      onPress={onPress || (() => {})}
+    >
       <Image source={{ uri: imageUri }} style={styles.avatar} />
       <View style={styles.info}>
         <Text style={styles.name} numberOfLines={1}>
