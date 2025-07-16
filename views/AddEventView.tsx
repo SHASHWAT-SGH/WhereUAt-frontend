@@ -1,0 +1,332 @@
+import AddedUser from "@/components/AddedUser";
+import FadedLineText from "@/components/FadedLineText";
+import ZoomableCard from "@/components/ZoomableCard";
+import { EventFormData } from "@/types/EventFormData";
+import { User } from "@/types/User";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { LocationObject } from "expo-location";
+import React from "react";
+import {
+  ActivityIndicator,
+  LayoutRectangle,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import MapView, { MapPressEvent, Marker } from "react-native-maps";
+
+interface props {
+  isDateModalVisible: boolean;
+  setDateModalIsVisible: (visible: boolean) => void;
+  date: Date;
+  setDate: (date: Date) => void;
+  isTimeModalVisible: boolean;
+  setTimeModalIsVisible: (visible: boolean) => void;
+  time: Date;
+  setTime: (time: Date) => void;
+  handleMapPress: (event: MapPressEvent) => void;
+  location: LocationObject | null;
+  selectedLocation: {
+    latitude: number;
+    longitude: number;
+  } | null;
+  onZoomRequest: (origin: LayoutRectangle, content: React.ReactNode) => void;
+  createEvent: () => Promise<void>;
+  isAddingEvent: boolean;
+  formData: EventFormData;
+  setFormData: (
+    data: EventFormData | ((prevData: EventFormData) => EventFormData)
+  ) => void;
+  selectedLocationAddress: string | null;
+  searchUser: (query: string) => Promise<void>;
+  searchedUsers: any; // Adjust type as needed
+  handleAddUserPressed: (user: User) => void; // Function to handle adding a user
+}
+
+const AddEventView = ({
+  isDateModalVisible,
+  setDateModalIsVisible,
+  date,
+  setDate,
+  isTimeModalVisible,
+  setTimeModalIsVisible,
+  time,
+  setTime,
+  handleMapPress,
+  location,
+  selectedLocation,
+  onZoomRequest,
+  createEvent,
+  isAddingEvent,
+  formData,
+  setFormData,
+  selectedLocationAddress,
+  searchUser,
+  searchedUsers,
+  handleAddUserPressed,
+}: props) => {
+  return (
+    <>
+      <ScrollView
+        style={{
+          flex: 1,
+          backgroundColor: "white",
+          padding: 16,
+        }}
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={styles.formText}>Event Name</Text>
+        <TextInput
+          style={styles.inputBox}
+          onChangeText={(text) => {
+            setFormData((prevData) => ({
+              ...prevData,
+              eventName: text,
+            }));
+          }}
+        />
+        <Text style={styles.formText}>Event Description</Text>
+        <TextInput
+          style={{ ...styles.inputBox, height: 80 }}
+          multiline={true}
+          numberOfLines={3}
+          maxLength={200}
+          onChangeText={(text) => {
+            setFormData((prevData) => ({
+              ...prevData,
+              eventDescription: text,
+            }));
+          }}
+        />
+        <Text style={styles.formText}>Event Date</Text>
+        <Pressable
+          style={styles.inputBox}
+          onPress={() => {
+            setDateModalIsVisible(true);
+          }}
+        >
+          <Text>
+            {date.toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "2-digit",
+              day: "2-digit",
+            })}
+          </Text>
+        </Pressable>
+        {isDateModalVisible && (
+          <DateTimePicker
+            value={date}
+            mode="date"
+            display="default"
+            onChange={(event, selectedDate) => {
+              setDateModalIsVisible(false);
+              if (selectedDate) {
+                const updated = new Date(date);
+                updated.setFullYear(selectedDate.getFullYear());
+                updated.setMonth(selectedDate.getMonth());
+                updated.setDate(selectedDate.getDate());
+
+                setDate(selectedDate);
+                setFormData((prevData) => ({
+                  ...prevData,
+                  eventTimeStamp: updated,
+                }));
+              }
+            }}
+          />
+        )}
+        <Text style={styles.formText}>Event Time</Text>
+        <Pressable
+          style={styles.inputBox}
+          onPress={() => {
+            setTimeModalIsVisible(true);
+          }}
+        >
+          <Text>
+            {time.toLocaleTimeString("en-US", {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: true,
+            })}
+          </Text>
+        </Pressable>
+        {isTimeModalVisible && (
+          <DateTimePicker
+            value={time}
+            mode="time"
+            display="spinner"
+            is24Hour={false}
+            onChange={(event, selectedTime) => {
+              setTimeModalIsVisible(false);
+              if (selectedTime) {
+                const updated = new Date(time);
+                updated.setHours(selectedTime.getHours());
+                updated.setMinutes(selectedTime.getMinutes());
+                updated.setSeconds(selectedTime.getSeconds());
+                updated.setMilliseconds(0);
+
+                setTime(selectedTime);
+                setFormData((prevData) => ({
+                  ...prevData,
+                  eventTimeStamp: updated,
+                }));
+              }
+            }}
+          />
+        )}
+        {/* Maps */}
+        <View style={{ flexDirection: "row", gap: 6 }}>
+          <Text style={styles.formText}>
+            Event Location {selectedLocation ? ":" : ""}
+          </Text>
+          <Text style={styles.formText}>{selectedLocationAddress || ""}</Text>
+        </View>
+        {/* Use the updated ZoomableCard */}
+        <ZoomableCard onZoomRequest={onZoomRequest}>
+          <MapView
+            style={styles.map}
+            provider="google"
+            initialRegion={
+              location
+                ? {
+                    latitude: location.coords.latitude,
+                    longitude: location.coords.longitude,
+                    latitudeDelta: 0.0922,
+                    longitudeDelta: 0.0421,
+                  }
+                : {
+                    latitude: 25.2460742,
+                    longitude: 82.996315,
+                    latitudeDelta: 0.0922,
+                    longitudeDelta: 0.0421,
+                  }
+            }
+            showsUserLocation={true}
+            showsMyLocationButton={true}
+            zoomEnabled={true}
+            showsCompass={true}
+            showsIndoors={true}
+            showsBuildings={true}
+            showsScale={true}
+            zoomTapEnabled={true}
+            onPress={handleMapPress}
+          >
+            {selectedLocation && (
+              <Marker
+                coordinate={{
+                  latitude: selectedLocation.latitude,
+                  longitude: selectedLocation.longitude,
+                }}
+                title="Selected Location"
+                description={`Lat: ${selectedLocation.latitude}, Lng: ${selectedLocation.longitude}`}
+              />
+            )}
+          </MapView>
+        </ZoomableCard>
+        {/* ---------- Add People ----------------------- */}
+        <Text style={styles.formText}>Add People</Text>
+        <TextInput
+          style={styles.inputBox}
+          placeholder="Enter email or username"
+          placeholderTextColor="#A2A2A2"
+          keyboardType="email-address"
+          autoCapitalize="none"
+          onChangeText={(text) => {
+            searchUser(text);
+          }}
+        />
+        {searchedUsers && searchedUsers.length > 0 ? (
+          searchedUsers.map((user: any) => (
+            <AddedUser
+              key={user.id}
+              name={user.firstName + " " + user.lastName}
+              email={user.userEmail}
+              imageUri="https://cdn-icons-png.flaticon.com/512/9187/9187604.png"
+              isSelected={formData.eventMembers.includes(user)}
+              onPress={() => handleAddUserPressed(user)}
+            />
+          ))
+        ) : (
+          <Text style={{ color: "#A2A2A2" }}>No users found</Text>
+        )}
+        <FadedLineText text="Selected Users" />
+        <View style={{ gap: 10, marginTop: 10 }}>
+          {formData.eventMembers.map((user, index) => (
+            <AddedUser
+              key={user.id}
+              name={user.firstName + " " + user.lastName}
+              email={user.userEmail}
+              imageUri="https://cdn-icons-png.flaticon.com/512/9187/9187604.png"
+              isSelected={formData.eventMembers.includes(user)}
+              onPress={() => handleAddUserPressed(user)}
+            />
+          ))}
+        </View>
+
+        {/* ---------- Add People ----------------------- */}
+        <TouchableOpacity
+          style={styles.button}
+          disabled={isAddingEvent}
+          onPress={() => {
+            // Handle form submission logic here
+            createEvent();
+            console.log("Event Created");
+          }}
+        >
+          {isAddingEvent ? (
+            <ActivityIndicator color={"white"} size={16} />
+          ) : (
+            <Text style={styles.buttonText}>Create Event</Text>
+          )}
+        </TouchableOpacity>
+      </ScrollView>
+    </>
+  );
+};
+
+export default AddEventView;
+
+const styles = StyleSheet.create({
+  button: {
+    marginTop: 20,
+    backgroundColor: "#6366f1",
+    padding: 10,
+    borderRadius: 5,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 30,
+  },
+  buttonText: {
+    color: "white",
+  },
+  formText: {
+    fontSize: 12,
+    marginBottom: 6,
+    // color: "#A2A2A2",
+    color: "black",
+    fontWeight: "500",
+  },
+  inputBox: {
+    height: 40,
+    borderWidth: 1,
+    borderColor: "#d3d5db",
+    borderRadius: 4,
+    paddingHorizontal: 8,
+    fontSize: 14,
+    color: "#111827",
+    marginBottom: 10,
+  },
+  wrapper: {
+    // height: 300,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 8,
+    overflow: "hidden",
+  },
+  map: { width: "100%", height: 100, marginBottom: 10 },
+});

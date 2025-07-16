@@ -1,71 +1,41 @@
-import BottomSheetAddEvent from "@/components/BottomSheetAddEvent";
 import EventCard from "@/components/EventCard";
 import FadedLineText from "@/components/FadedLineText";
 import FilterBar from "@/components/FilterBar";
 import { getNoEventsFoundTag } from "@/utils/getNoEventsFoundTags";
 import { Ionicons } from "@expo/vector-icons";
-import { useFocusEffect } from "@react-navigation/native";
-import { LocationObject } from "expo-location";
+import { useRouter } from "expo-router";
 import React, { useEffect } from "react";
 import {
-  Animated,
   Image,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-import { MapPressEvent } from "react-native-maps";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 interface props {
-  isVisible: boolean;
-  setIsVisible: (visible: boolean) => void;
-  isDateModalVisible: boolean;
-  setDateModalIsVisible: (visible: boolean) => void;
-  date: Date;
-  setDate: (date: Date) => void;
-  isTimeModalVisible: boolean;
-  setTimeModalIsVisible: (visible: boolean) => void;
-  time: Date;
-  setTime: (time: Date) => void;
-  handleMapPress: (event: MapPressEvent) => void;
-  location: LocationObject | null;
-  selectedLocation: {
-    latitude: number;
-    longitude: number;
-  } | null;
-  bottomSheetHeight: number;
-  setBottomSheetHeight: (height: number) => void;
   events: any;
   noEventsFoundTag: String;
   setNoEventsFoundTag: (fun: any) => void;
+  refreshing: boolean;
+  onRefresh: () => void;
 }
 
 const EventsView = ({
-  isVisible,
-  setIsVisible,
-  isDateModalVisible,
-  setDateModalIsVisible,
-  date,
-  setDate,
-  isTimeModalVisible,
-  setTimeModalIsVisible,
-  time,
-  setTime,
-  handleMapPress,
-  location,
-  selectedLocation,
-  bottomSheetHeight,
-  setBottomSheetHeight,
   events,
   noEventsFoundTag,
   setNoEventsFoundTag,
+  refreshing,
+  onRefresh,
 }: props) => {
   useEffect(() => {
     setNoEventsFoundTag(getNoEventsFoundTag());
   }, []);
+
+  const router = useRouter();
 
   return (
     <SafeAreaView style={styles.container}>
@@ -90,9 +60,17 @@ const EventsView = ({
         </>
       ) : (
         <>
-          <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            style={{ flex: 1 }}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            }
+          >
             <View style={{ flex: 1 }}>
-              <EventCard />
+              {events.map((event: any, idx: number) => (
+                <EventCard key={event.id || idx} />
+              ))}
             </View>
           </ScrollView>
         </>
@@ -101,7 +79,7 @@ const EventsView = ({
       <TouchableOpacity
         style={styles.addBtn}
         onPress={() => {
-          setIsVisible(!isVisible);
+          router.push("/addEvent");
         }}
       >
         <Ionicons
@@ -111,25 +89,6 @@ const EventsView = ({
           style={styles.addIcon}
         />
       </TouchableOpacity>
-
-      {/* Bottom sheet UI */}
-      <BottomSheetAddEvent
-        isVisible={isVisible}
-        setIsVisible={setIsVisible}
-        bottomSheetHeight={bottomSheetHeight}
-        setBottomSheetHeight={setBottomSheetHeight}
-        isDateModalVisible={isDateModalVisible}
-        setDateModalIsVisible={setDateModalIsVisible}
-        date={date}
-        setDate={setDate}
-        isTimeModalVisible={isTimeModalVisible}
-        setTimeModalIsVisible={setTimeModalIsVisible}
-        time={time}
-        setTime={setTime}
-        handleMapPress={handleMapPress}
-        location={location}
-        selectedLocation={selectedLocation}
-      />
     </SafeAreaView>
   );
 };
