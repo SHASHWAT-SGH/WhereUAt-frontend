@@ -1,35 +1,35 @@
-import BottomSheetAddEvent from "@/components/BottomSheetAddEvent";
 import EventCard from "@/components/EventCard";
 import FadedLineText from "@/components/FadedLineText";
 import FilterBar from "@/components/FilterBar";
 import { getNoEventsFoundTag } from "@/utils/getNoEventsFoundTags";
 import { Ionicons } from "@expo/vector-icons";
-import { useFocusEffect } from "@react-navigation/native";
-import { LocationObject } from "expo-location";
 import { useRouter } from "expo-router";
 import React, { useEffect } from "react";
 import {
-  Animated,
   Image,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-import { MapPressEvent } from "react-native-maps";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 interface props {
   events: any;
   noEventsFoundTag: String;
   setNoEventsFoundTag: (fun: any) => void;
+  refreshing: boolean;
+  onRefresh: () => void;
 }
 
 const EventsView = ({
   events,
   noEventsFoundTag,
   setNoEventsFoundTag,
+  refreshing,
+  onRefresh,
 }: props) => {
   useEffect(() => {
     setNoEventsFoundTag(getNoEventsFoundTag());
@@ -60,7 +60,13 @@ const EventsView = ({
         </>
       ) : (
         <>
-          <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            style={{ flex: 1 }}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            }
+          >
             <View style={{ flex: 1 }}>
               {events.map((event: any, idx: number) => (
                 <EventCard key={event.id || idx} />

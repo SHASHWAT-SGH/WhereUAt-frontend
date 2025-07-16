@@ -10,12 +10,10 @@ type Props = {
 };
 
 const AddedUser = ({ name, email, imageUri, isSelected, onPress }: Props) => {
-  console.log(isSelected);
-
   return (
     <Pressable
       style={[styles.card, isSelected ? { backgroundColor: "#dee7fc" } : null]}
-      onPress={onPress || (() => {})}
+      onPress={!isSelected ? onPress : () => {}}
     >
       <Image source={{ uri: imageUri }} style={styles.avatar} />
       <View style={styles.info}>

@@ -5,9 +5,10 @@ import { getCurrentLocation } from "@/utils/getCurrentLocation";
 import { reverseGeocode } from "@/utils/reverseGeocode";
 import AddEventView from "@/views/AddEventView";
 import * as Location from "expo-location";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { LayoutRectangle, StyleSheet, View } from "react-native";
 import { MapPressEvent } from "react-native-maps";
+import { User } from "@/types/User";
 
 const AddEvent = () => {
   const [isTimeModalVisible, setTimeModalIsVisible] = useState<boolean>(false);
@@ -44,10 +45,10 @@ const AddEvent = () => {
     eventTimeStamp: new Date(),
     eventImageUrl: "",
     eventOrganizerId: "",
-    eventMembersId: [],
+    eventMembers: [],
   });
 
-  const [searchedUsers, setSearchedUsers] = useState(null);
+  const [searchedUsers, setSearchedUsers] = useState<User | null>(null);
 
   const handleZoomRequest = (
     origin: LayoutRectangle,
@@ -79,9 +80,16 @@ const AddEvent = () => {
 
   const createEvent = async () => {
     setIsAddingEvent(true);
+
+    const formattedData = {
+      ...formData,
+      eventMembers: formData.eventMembers.map((member) => member.id),
+    };
+    console.log("formattedData: ", formattedData);
+
     try {
-      const response = await api.post("/api/v1/event/create", formData);
-      if (response.status === 200) {
+      const response = await api.post("/api/v1/event/create", formattedData);
+      if (response.status === 201) {
         console.log("Created event: ", response.data);
       } else {
         console.error("Failed creating event:", response.statusText);
@@ -115,10 +123,10 @@ const AddEvent = () => {
     }
   };
 
-  const handleAddUserPressed = (userId: string) => {
+  const handleAddUserPressed = (user: User) => {
     setFormData((prevData) => ({
       ...prevData,
-      eventMembersId: [...prevData.eventMembersId, userId],
+      eventMembers: [...prevData.eventMembers, user],
     }));
   };
 

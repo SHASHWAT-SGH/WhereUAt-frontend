@@ -1,3 +1,5 @@
+import { User } from "./User";
+
 export interface EventFormData {
   eventName: string;
   eventDescription: string;
@@ -6,5 +8,6 @@ export interface EventFormData {
   eventTimeStamp: Date;
   eventImageUrl: string;
   eventOrganizerId: string;
-  eventMembersId: string[];
+  eventMembers: User[];
 }
+

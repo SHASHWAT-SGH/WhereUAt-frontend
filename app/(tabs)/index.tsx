@@ -4,7 +4,7 @@ import { getCurrentLocation } from "@/utils/getCurrentLocation";
 import { getNoEventsFoundTag } from "@/utils/getNoEventsFoundTags";
 import EventsView from "@/views/EventsView";
 import * as Location from "expo-location";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 
 const EventsScreen = () => {
   const [location, setLocation] = useState<Location.LocationObject | null>(
@@ -13,6 +13,13 @@ const EventsScreen = () => {
 
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [events, setEvents] = useState(null);
+
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchEvents();
+    setRefreshing(false);
+  }, []);
 
   const [noEventsFoundTag, setNoEventsFoundTag] = useState(
     getNoEventsFoundTag()
@@ -58,6 +65,8 @@ const EventsScreen = () => {
         events={events}
         noEventsFoundTag={noEventsFoundTag}
         setNoEventsFoundTag={setNoEventsFoundTag}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
       />
     </>
   );

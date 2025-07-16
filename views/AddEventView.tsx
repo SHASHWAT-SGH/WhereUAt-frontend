@@ -2,6 +2,7 @@ import AddedUser from "@/components/AddedUser";
 import FadedLineText from "@/components/FadedLineText";
 import ZoomableCard from "@/components/ZoomableCard";
 import { EventFormData } from "@/types/EventFormData";
+import { User } from "@/types/User";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { LocationObject } from "expo-location";
 import React from "react";
@@ -9,6 +10,7 @@ import {
   ActivityIndicator,
   LayoutRectangle,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -43,7 +45,7 @@ interface props {
   selectedLocationAddress: string | null;
   searchUser: (query: string) => Promise<void>;
   searchedUsers: any; // Adjust type as needed
-  handleAddUserPressed: (userId: string) => void; // Function to handle adding a user
+  handleAddUserPressed: (user: User) => void; // Function to handle adding a user
 }
 
 const AddEventView = ({
@@ -88,7 +90,6 @@ const AddEventView = ({
             }));
           }}
         />
-
         <Text style={styles.formText}>Event Description</Text>
         <TextInput
           style={{ ...styles.inputBox, height: 80 }}
@@ -102,7 +103,6 @@ const AddEventView = ({
             }));
           }}
         />
-
         <Text style={styles.formText}>Event Date</Text>
         <Pressable
           style={styles.inputBox}
@@ -118,7 +118,6 @@ const AddEventView = ({
             })}
           </Text>
         </Pressable>
-
         {isDateModalVisible && (
           <DateTimePicker
             value={date}
@@ -141,7 +140,6 @@ const AddEventView = ({
             }}
           />
         )}
-
         <Text style={styles.formText}>Event Time</Text>
         <Pressable
           style={styles.inputBox}
@@ -157,7 +155,6 @@ const AddEventView = ({
             })}
           </Text>
         </Pressable>
-
         {isTimeModalVisible && (
           <DateTimePicker
             value={time}
@@ -182,7 +179,6 @@ const AddEventView = ({
             }}
           />
         )}
-
         {/* Maps */}
         <View style={{ flexDirection: "row", gap: 6 }}>
           <Text style={styles.formText}>
@@ -190,7 +186,6 @@ const AddEventView = ({
           </Text>
           <Text style={styles.formText}>{selectedLocationAddress || ""}</Text>
         </View>
-
         {/* Use the updated ZoomableCard */}
         <ZoomableCard onZoomRequest={onZoomRequest}>
           <MapView
@@ -233,12 +228,14 @@ const AddEventView = ({
             )}
           </MapView>
         </ZoomableCard>
-
+        {/* ---------- Add People ----------------------- */}
         <Text style={styles.formText}>Add People</Text>
         <TextInput
           style={styles.inputBox}
           placeholder="Enter email or username"
           placeholderTextColor="#A2A2A2"
+          keyboardType="email-address"
+          autoCapitalize="none"
           onChangeText={(text) => {
             searchUser(text);
           }}
@@ -250,23 +247,28 @@ const AddEventView = ({
               name={user.firstName + " " + user.lastName}
               email={user.userEmail}
               imageUri="https://cdn-icons-png.flaticon.com/512/9187/9187604.png"
-              isSelected={formData.eventMembersId.includes(user.id)}
-              onPress={() => handleAddUserPressed(user.id)}
+              isSelected={formData.eventMembers.includes(user)}
+              onPress={() => handleAddUserPressed(user)}
             />
           ))
         ) : (
           <Text style={{ color: "#A2A2A2" }}>No users found</Text>
         )}
-
         <FadedLineText text="Selected Users" />
         <View style={{ gap: 10, marginTop: 10 }}>
-          {formData.eventMembersId.map((userId, index) => (
-            <Text key={index} style={{ color: "#444" }}>
-              • User ID: {userId}
-            </Text>
+          {formData.eventMembers.map((user, index) => (
+            <AddedUser
+              key={user.id}
+              name={user.firstName + " " + user.lastName}
+              email={user.userEmail}
+              imageUri="https://cdn-icons-png.flaticon.com/512/9187/9187604.png"
+              isSelected={formData.eventMembers.includes(user)}
+              onPress={() => handleAddUserPressed(user)}
+            />
           ))}
         </View>
 
+        {/* ---------- Add People ----------------------- */}
         <TouchableOpacity
           style={styles.button}
           disabled={isAddingEvent}
