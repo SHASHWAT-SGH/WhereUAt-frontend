@@ -1,16 +1,14 @@
-import React, { createContext, useState, useContext, useEffect } from "react";
-import { Text } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import * as SecureStore from "expo-secure-store";
 import {
   GoogleSignin,
-  GoogleSigninButton,
-  statusCodes,
   isErrorWithCode,
   isSuccessResponse,
+  statusCodes,
   User,
 } from "@react-native-google-signin/google-signin";
 import Constants from "expo-constants";
+import * as SecureStore from "expo-secure-store";
+import React, { createContext, useContext, useEffect, useState } from "react";
+import api from "../utils/axiosInstance";
 
 GoogleSignin.configure({
   webClientId: Constants.expoConfig?.extra?.GOOGLE_SIGNIN_WEB_CLIENT_ID ?? "", // client ID of type WEB for your server. Required to get the `idToken` on the user object, and for offline access.
@@ -34,6 +32,7 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+
   // read token from secure storage on mount
   useEffect(() => {
     const fetchStoredUser = async () => {
@@ -61,13 +60,30 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       await GoogleSignin.hasPlayServices();
       const response = await GoogleSignin.signIn();
       if (isSuccessResponse(response)) {
-        console.log("User Info response: ", response.data);
-        setUser(response.data);
-        // store into secure storage
-        await SecureStore.setItemAsync(
-          "OAuthTokenResponse",
-          JSON.stringify(response.data)
-        );
+        // signin to backend
+        const res = await api.post("/api/v1/auth/login", {
+          firstName: response.data.user.givenName,
+          lastName: response.data.user.familyName,
+          userEmail: response.data.user.email,
+        });
+        if (res.status == 200 || res.status == 201) {
+          // user already exists or user created successfully
+          setUser(response.data);
+          console.log("User Info: ", response.data);
+
+          // store into secure storage
+          await SecureStore.setItemAsync(
+            "OAuthTokenResponse",
+            JSON.stringify(response.data)
+          );
+
+          // set the token in axios instance
+          api.defaults.headers.common[
+            "Authorization"
+          ] = `Bearer ${response.data.idToken}`;
+        } else {
+          console.error("Error during sign in:", res.data);
+        }
       } else {
         // sign in was cancelled by user
         setUser(null);
@@ -127,4 +143,4 @@ const useAuth = (): AuthContextType => {
   return context;
 };
 
-export { AuthProvider, useAuth, AuthContext };
+export { AuthContext, AuthProvider, useAuth };

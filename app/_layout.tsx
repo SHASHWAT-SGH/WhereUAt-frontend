@@ -29,7 +29,7 @@ function AuthRoot() {
   }, [user, isLoading, segments]);
 
   return (
-    <Stack screenOptions={{ headerShown: true }}>
+    <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen
         name="addEvent"
