@@ -43,7 +43,7 @@ interface props {
     data: EventFormData | ((prevData: EventFormData) => EventFormData)
   ) => void;
   selectedLocationAddress: string | null;
-  searchUser: (query: string) => Promise<void>;
+  searchUser: (text: string) => void;
   searchedUsers: any; // Adjust type as needed
   handleAddUserPressed: (user: User) => void; // Function to handle adding a user
 }

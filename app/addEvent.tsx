@@ -5,10 +5,11 @@ import { getCurrentLocation } from "@/utils/getCurrentLocation";
 import { reverseGeocode } from "@/utils/reverseGeocode";
 import AddEventView from "@/views/AddEventView";
 import * as Location from "expo-location";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { LayoutRectangle, StyleSheet, View } from "react-native";
 import { MapPressEvent } from "react-native-maps";
 import { User } from "@/types/User";
+import { debounce } from "lodash";
 import { useAuth } from "@/context/AuthContext";
 
 const AddEvent = () => {
@@ -47,7 +48,7 @@ const AddEvent = () => {
     eventLongitude: 0,
     eventTimeStamp: new Date(),
     eventImageUrl: "",
-    eventOrganizerId: user?.user.id ?? "",
+    eventOrganizerId: user?.user.id || "",
     eventMembers: [],
   });
 
@@ -86,8 +87,8 @@ const AddEvent = () => {
 
     const formattedData = {
       ...formData,
+      eventOrganizerId: user?.user.id || "",
       eventMembersId: formData.eventMembers.map((member) => member.id),
-      eventOrganizerId: user?.user.id ?? "abc",
     };
     console.log("formattedData: ", formattedData);
 
@@ -126,6 +127,16 @@ const AddEvent = () => {
       setSearchedUsers(null);
     }
   };
+
+  // Debounced version of searchUser
+  const debouncedSearchUser = useMemo(() => debounce(searchUser, 500), []);
+
+  // Cleanup debounce on unmount
+  useEffect(() => {
+    return () => {
+      debouncedSearchUser.cancel();
+    };
+  }, []);
 
   const handleAddUserPressed = (user: User) => {
     setFormData((prevData) => ({
@@ -168,7 +179,7 @@ const AddEvent = () => {
         formData={formData}
         setFormData={setFormData}
         selectedLocationAddress={selectedLocationAddress}
-        searchUser={searchUser}
+        searchUser={debouncedSearchUser}
         searchedUsers={searchedUsers}
         handleAddUserPressed={handleAddUserPressed}
       />

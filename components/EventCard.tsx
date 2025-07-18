@@ -76,17 +76,6 @@ const EventCard = ({
     };
   }, [eventLatitude, eventLongitude]);
 
-  console.log("EventCard Props:", {
-    eventName,
-    eventDescription,
-    eventImageUrl,
-    eventLatitude,
-    eventLongitude,
-    eventMembers,
-    eventOrganizerId,
-    eventTimeStamp,
-  });
-
   return (
     <View style={styles.eventCard}>
       <View style={styles.imgContainer}>
@@ -173,18 +162,34 @@ const EventCard = ({
         </Text>
       </View>
 
-      <TouchableOpacity
-        style={{
-          backgroundColor: "#6366f1",
-          paddingVertical: 8,
-          borderRadius: 8,
-          alignItems: "center",
-          marginTop: 8,
-        }}
-        onPress={() => console.log("Join Event Pressed")}
-      >
-        <Text style={{ color: "white", fontWeight: "bold" }}>Join Event</Text>
-      </TouchableOpacity>
+      <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+        <TouchableOpacity
+          style={{
+            backgroundColor: "#6366f1",
+            paddingVertical: 8,
+            borderRadius: 8,
+            alignItems: "center",
+            marginTop: 8,
+            width: "48%",
+          }}
+          onPress={() => console.log("Join Event Pressed")}
+        >
+          <Text style={{ color: "white", fontWeight: "bold" }}>Join</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={{
+            backgroundColor: "#e04e43",
+            paddingVertical: 8,
+            borderRadius: 8,
+            alignItems: "center",
+            marginTop: 8,
+            width: "48%",
+          }}
+          onPress={() => console.log("Decline Event Pressed")}
+        >
+          <Text style={{ color: "white", fontWeight: "bold" }}>Decline</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
