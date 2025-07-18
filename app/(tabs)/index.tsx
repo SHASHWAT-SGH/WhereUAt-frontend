@@ -1,4 +1,5 @@
 import Header from "@/components/Header";
+import { useAuth } from "@/context/AuthContext";
 import api from "@/utils/axiosInstance";
 import { getCurrentLocation } from "@/utils/getCurrentLocation";
 import { getNoEventsFoundTag } from "@/utils/getNoEventsFoundTags";
@@ -7,6 +8,8 @@ import * as Location from "expo-location";
 import React, { useCallback, useEffect, useState } from "react";
 
 const EventsScreen = () => {
+  const { user } = useAuth();
+
   const [location, setLocation] = useState<Location.LocationObject | null>(
     null
   );
@@ -27,7 +30,11 @@ const EventsScreen = () => {
 
   const fetchEvents = async () => {
     try {
-      const response = await api.get("/api/v1/event/get-all-events");
+      const response = await api.get("/api/v1/event/get-events-by-member", {
+        params: {
+          memberId: user?.user.id,
+        },
+      });
       if (response.status === 200) {
         setEvents(response.data);
         console.log("Fetched Events: ", response.data);

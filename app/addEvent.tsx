@@ -9,8 +9,11 @@ import React, { useCallback, useEffect, useState } from "react";
 import { LayoutRectangle, StyleSheet, View } from "react-native";
 import { MapPressEvent } from "react-native-maps";
 import { User } from "@/types/User";
+import { useAuth } from "@/context/AuthContext";
 
 const AddEvent = () => {
+  const { user } = useAuth();
+
   const [isTimeModalVisible, setTimeModalIsVisible] = useState<boolean>(false);
   const [isDateModalVisible, setDateModalIsVisible] = useState<boolean>(false);
   const [date, setDate] = useState<Date>(new Date());
@@ -44,7 +47,7 @@ const AddEvent = () => {
     eventLongitude: 0,
     eventTimeStamp: new Date(),
     eventImageUrl: "",
-    eventOrganizerId: "",
+    eventOrganizerId: user?.user.id ?? "",
     eventMembers: [],
   });
 
@@ -83,7 +86,8 @@ const AddEvent = () => {
 
     const formattedData = {
       ...formData,
-      eventMembers: formData.eventMembers.map((member) => member.id),
+      eventMembersId: formData.eventMembers.map((member) => member.id),
+      eventOrganizerId: user?.user.id ?? "abc",
     };
     console.log("formattedData: ", formattedData);
 

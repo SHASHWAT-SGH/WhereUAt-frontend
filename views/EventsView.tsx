@@ -69,7 +69,17 @@ const EventsView = ({
           >
             <View style={{ flex: 1 }}>
               {events.map((event: any, idx: number) => (
-                <EventCard key={event.id || idx} />
+                <EventCard
+                  key={event.id || idx}
+                  eventName={event.eventName}
+                  eventDescription={event.eventDescription}
+                  eventImageUrl={event.eventImageUrl}
+                  eventLatitude={event.eventLatitude}
+                  eventLongitude={event.eventLongitude}
+                  eventMembers={event.eventMembers}
+                  eventOrganizerId={event.eventOrganizerId}
+                  eventTimeStamp={event.eventTimeStamp}
+                />
               ))}
             </View>
           </ScrollView>

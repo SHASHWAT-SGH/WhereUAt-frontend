@@ -6,8 +6,10 @@ import {
   Touchable,
   TouchableOpacity,
 } from "react-native";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
+import { EventFormData } from "@/types/EventFormData";
+import { reverseGeocode } from "@/utils/reverseGeocode";
 
 const EventMemberIcon = () => {
   return (
@@ -35,37 +37,108 @@ const EventMemberIcon = () => {
   );
 };
 
-const EventCard = () => {
+const EventCard = ({
+  eventName,
+  eventDescription,
+  eventImageUrl,
+  eventLatitude,
+  eventLongitude,
+  eventMembers,
+  eventOrganizerId,
+  eventTimeStamp,
+}: EventFormData) => {
+  const [address, setAddress] = useState<string>("...");
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchAddress = async () => {
+      if (eventLatitude && eventLongitude) {
+        const result = await reverseGeocode({
+          latitude: eventLatitude,
+          longitude: eventLongitude,
+        });
+        if (isMounted) {
+          setAddress(
+            result
+              ? `${result.name || ""} ${result.street || ""}, ${
+                  result.city || ""
+                }, ${result.region || ""}`
+              : "Location not available"
+          );
+        }
+      } else {
+        setAddress("Location not available");
+      }
+    };
+    fetchAddress();
+    return () => {
+      isMounted = false;
+    };
+  }, [eventLatitude, eventLongitude]);
+
+  console.log("EventCard Props:", {
+    eventName,
+    eventDescription,
+    eventImageUrl,
+    eventLatitude,
+    eventLongitude,
+    eventMembers,
+    eventOrganizerId,
+    eventTimeStamp,
+  });
+
   return (
     <View style={styles.eventCard}>
       <View style={styles.imgContainer}>
-        <Image
-          source={require("../assets/images/event-placeholder-3.png")}
-          style={{
-            height: "85%",
-            width: 240,
-            borderRadius: 16,
-            resizeMode: "cover",
-          }}
-        />
+        {eventImageUrl == "" ? (
+          <Image
+            source={require("../assets/images/event-placeholder-3.png")}
+            style={{
+              height: "85%",
+              width: 240,
+              borderRadius: 16,
+              resizeMode: "cover",
+            }}
+          />
+        ) : (
+          <Image
+            source={{
+              uri: eventImageUrl,
+            }}
+            style={{
+              height: "100%",
+              width: "100%",
+              borderRadius: 16,
+              resizeMode: "cover",
+            }}
+          />
+        )}
         <View style={styles.calender}>
-          <Text style={styles.calenderDay}>08</Text>
-          <Text style={styles.calenderMonth}>Oct</Text>
+          <Text style={styles.calenderDay}>
+            {`${new Date(eventTimeStamp).getDay()}`.padStart(2, "0")}
+          </Text>
+          <Text style={styles.calenderMonth}>
+            {new Date(eventTimeStamp).toLocaleString("default", {
+              month: "short",
+            })}
+          </Text>
         </View>
         <View style={styles.userIconContainer}>
-          <EventMemberIcon />
-          <EventMemberIcon />
-          <EventMemberIcon />
-          <EventMemberIcon />
-          <Text style={styles.userCountText}>+5 others</Text>
+          {eventMembers &&
+            eventMembers
+              .slice(0, 4)
+              .map((member, index) => <EventMemberIcon key={index} />)}
+
+          <Text style={styles.userCountText}>
+            {eventMembers && eventMembers.length > 4
+              ? `+${eventMembers.length - 4} others`
+              : ""}
+          </Text>
         </View>
       </View>
 
-      <Text style={styles.heading}>Janvi's Birthday</Text>
-      <Text style={styles.description}>
-        Birthday Party at Janvi's place. Join us for a fun-filled day with
-        friends, food, and festivities. Don't miss out on the cake.
-      </Text>
+      <Text style={styles.heading}>{eventName}</Text>
+      <Text style={styles.description}>{eventDescription}</Text>
 
       <View style={styles.infoContainer}>
         <Ionicons
@@ -74,7 +147,8 @@ const EventCard = () => {
           color="#6366f1"
           style={{ marginRight: 4 }}
         />
-        <Text style={styles.infoText}>Meera Colony, BHU, Varanasi</Text>
+
+        <Text style={styles.infoText}>{address}</Text>
       </View>
 
       <View style={styles.infoContainer}>
@@ -85,7 +159,17 @@ const EventCard = () => {
           style={{ marginRight: 4 }}
         />
         <Text style={styles.infoText}>
-          Wednesday, October 08, 2025 · 10:00 PM
+          {new Date(eventTimeStamp)
+            .toLocaleString("en-US", {
+              weekday: "long",
+              year: "numeric",
+              month: "long",
+              day: "2-digit",
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: true,
+            })
+            .replace("at", " · ")}
         </Text>
       </View>
 
