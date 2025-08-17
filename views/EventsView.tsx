@@ -15,9 +15,10 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { EventDetails } from "@/types/api/event";
 
 interface props {
-  events: any;
+  events: EventDetails[] | null;
   noEventsFoundTag: String;
   setNoEventsFoundTag: (fun: any) => void;
   refreshing: boolean;
@@ -46,6 +47,7 @@ const EventsView = ({
       <FadedLineText text="All Events" />
       <FilterBar />
 
+      {/* if there is no events, show no events found tag */}
       {!events || events.length === 0 ? (
         <>
           <View style={styles.emptyImgContainer}>
@@ -70,18 +72,11 @@ const EventsView = ({
             }
           >
             <View style={{ flex: 1 }}>
-              {events.map((event: any, idx: number) => (
+              {events.map((event: EventDetails, idx: number) => (
                 <EventCard
-                  key={event.id || idx}
-                  eventName={event.eventName}
-                  eventDescription={event.eventDescription}
-                  eventImageUrl={event.eventImageUrl}
-                  eventLatitude={event.eventLatitude}
-                  eventLongitude={event.eventLongitude}
-                  eventMembers={event.eventMembers}
-                  eventOrganizerId={event.eventOrganizerId}
-                  eventTimeStamp={event.eventTimeStamp}
-                  joinEvent={() => joinEvent(event.id)}
+                  key={event.event.id || idx}
+                  event={event}
+                  joinEvent={() => joinEvent(event.event.id)}
                 />
               ))}
             </View>

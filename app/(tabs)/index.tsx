@@ -6,6 +6,8 @@ import { getNoEventsFoundTag } from "@/utils/getNoEventsFoundTags";
 import EventsView from "@/views/EventsView";
 import * as Location from "expo-location";
 import React, { useCallback, useEffect, useState } from "react";
+import { fetchEvents } from "@/api/event.api";
+import { EventDetails } from "@/types/api/event";
 
 const EventsScreen = () => {
   const { user } = useAuth();
@@ -15,12 +17,12 @@ const EventsScreen = () => {
   );
 
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [events, setEvents] = useState(null);
+  const [events, setEvents] = useState<EventDetails[] | null>(null);
 
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await fetchEvents();
+    await handleFetchEvents();
     setRefreshing(false);
   }, []);
 
@@ -28,19 +30,10 @@ const EventsScreen = () => {
     getNoEventsFoundTag()
   );
 
-  const fetchEvents = async () => {
+  const handleFetchEvents = async () => {
     try {
-      const response = await api.get("/api/v1/event/get-events-by-member", {
-        params: {
-          memberId: user?.user.id,
-        },
-      });
-      if (response.status === 200) {
-        setEvents(response.data);
-        console.log("Fetched Events: ", response.data);
-      } else {
-        console.error("Failed to fetch events:", response.statusText);
-      }
+      const response = await fetchEvents(user?.user.id || "");
+      setEvents(response);
     } catch (error) {
       console.error("Error fetching events:", error);
     }
@@ -56,7 +49,7 @@ const EventsScreen = () => {
       console.log("Join Event Response: ", res.data);
       if (res.status === 200) {
         // if successfully joined, refetch events
-        await fetchEvents();
+        await handleFetchEvents();
       }
     } catch (error) {
       console.error("Error joining event:", error);
@@ -64,7 +57,7 @@ const EventsScreen = () => {
   };
 
   useEffect(() => {
-    fetchEvents();
+    handleFetchEvents();
   }, []);
 
   useEffect(() => {

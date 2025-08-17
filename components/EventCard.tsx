@@ -11,6 +11,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { EventFormData } from "@/types/EventFormData";
 import { reverseGeocode } from "@/utils/reverseGeocode";
 import { useAuth } from "@/context/AuthContext";
+import { EventDetails } from "@/types/api/event";
 
 const EventMemberIcon = () => {
   return (
@@ -38,29 +39,25 @@ const EventMemberIcon = () => {
   );
 };
 
-const EventCard = ({
-  eventName,
-  eventDescription,
-  eventImageUrl,
-  eventLatitude,
-  eventLongitude,
-  eventMembers,
-  eventOrganizerId,
-  eventTimeStamp,
-  joinEvent,
-}: EventFormData) => {
+interface props {
+  event: EventDetails;
+  joinEvent: () => void;
+}
+
+const EventCard = ({ event, joinEvent }: props) => {
   const { user } = useAuth();
 
   const [address, setAddress] = useState<string>("...");
   const [hasJoined, setHasJoined] = useState<boolean>(false);
 
+  // update location of event when coordinates of event changes
   useEffect(() => {
     let isMounted = true;
     const fetchAddress = async () => {
-      if (eventLatitude && eventLongitude) {
+      if (event.event.eventLocation) {
         const result = await reverseGeocode({
-          latitude: eventLatitude,
-          longitude: eventLongitude,
+          latitude: event.event.eventLocation.coordinates[1],
+          longitude: event.event.eventLocation.coordinates[0],
         });
         if (isMounted) {
           setAddress(
@@ -79,14 +76,12 @@ const EventCard = ({
     return () => {
       isMounted = false;
     };
-  }, [eventLatitude, eventLongitude]);
-
-  useEffect(() => {}, []);
+  }, [event.event.eventLocation]);
 
   return (
     <View style={styles.eventCard}>
       <View style={styles.imgContainer}>
-        {eventImageUrl == "" ? (
+        {event.event.eventImageUrl == "" ? (
           <Image
             source={require("../assets/images/event-placeholder-3.png")}
             style={{
@@ -99,7 +94,7 @@ const EventCard = ({
         ) : (
           <Image
             source={{
-              uri: eventImageUrl,
+              uri: event.event.eventImageUrl,
             }}
             style={{
               height: "100%",
@@ -111,30 +106,33 @@ const EventCard = ({
         )}
         <View style={styles.calender}>
           <Text style={styles.calenderDay}>
-            {`${new Date(eventTimeStamp).getDay()}`.padStart(2, "0")}
+            {`${new Date(event.event.eventTimeStamp).getDate()}`.padStart(
+              2,
+              "0"
+            )}
           </Text>
           <Text style={styles.calenderMonth}>
-            {new Date(eventTimeStamp).toLocaleString("default", {
+            {new Date(event.event.eventTimeStamp).toLocaleString("default", {
               month: "short",
             })}
           </Text>
         </View>
         <View style={styles.userIconContainer}>
-          {eventMembers &&
-            eventMembers
+          {event.members &&
+            event.members
               .slice(0, 4)
               .map((member, index) => <EventMemberIcon key={index} />)}
 
           <Text style={styles.userCountText}>
-            {eventMembers && eventMembers.length > 4
-              ? `+${eventMembers.length - 4} others`
+            {event.members && event.members.length > 4
+              ? `+${event.members.length - 4} others`
               : ""}
           </Text>
         </View>
       </View>
 
-      <Text style={styles.heading}>{eventName}</Text>
-      <Text style={styles.description}>{eventDescription}</Text>
+      <Text style={styles.heading}>{event.event.eventName}</Text>
+      <Text style={styles.description}>{event.event.eventDescription}</Text>
 
       <View style={styles.infoContainer}>
         <Ionicons
@@ -155,7 +153,7 @@ const EventCard = ({
           style={{ marginRight: 4 }}
         />
         <Text style={styles.infoText}>
-          {new Date(eventTimeStamp)
+          {new Date(event.event.eventTimeStamp)
             .toLocaleString("en-US", {
               weekday: "long",
               year: "numeric",
