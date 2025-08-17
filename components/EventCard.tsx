@@ -11,7 +11,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { EventFormData } from "@/types/EventFormData";
 import { reverseGeocode } from "@/utils/reverseGeocode";
 import { useAuth } from "@/context/AuthContext";
-import { EventDetails } from "@/types/api/event";
+import { EventDetails, EventMember } from "@/types/api/event";
+import { JoinStatus } from "@/types/enums/JoinStatus";
 
 const EventMemberIcon = () => {
   return (
@@ -48,7 +49,9 @@ const EventCard = ({ event, joinEvent }: props) => {
   const { user } = useAuth();
 
   const [address, setAddress] = useState<string>("...");
-  const [hasJoined, setHasJoined] = useState<boolean>(false);
+  const [hasJoined, setHasJoined] = useState<JoinStatus | null>(
+    JoinStatus.PENDING
+  );
 
   // update location of event when coordinates of event changes
   useEffect(() => {
@@ -77,6 +80,14 @@ const EventCard = ({ event, joinEvent }: props) => {
       isMounted = false;
     };
   }, [event.event.eventLocation]);
+
+  // check if this user has joined the event : set its status
+  useEffect(() => {
+    const _user = event.members?.find(
+      (member: EventMember) => member.userId === user?.user.id
+    );
+    setHasJoined(_user ? _user.status : null);
+  }, [event.members, user?.user.id]);
 
   return (
     <View style={styles.eventCard}>
@@ -167,7 +178,14 @@ const EventCard = ({ event, joinEvent }: props) => {
         </Text>
       </View>
 
-      <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          gap: 4,
+        }}
+      >
+        {/* Join Button */}
         <TouchableOpacity
           style={{
             backgroundColor: "#6366f1",
@@ -175,12 +193,25 @@ const EventCard = ({ event, joinEvent }: props) => {
             borderRadius: 8,
             alignItems: "center",
             marginTop: 8,
-            width: "48%",
+            width:
+              hasJoined === JoinStatus.JOINED
+                ? "94%"
+                : hasJoined === JoinStatus.DECLINED
+                ? "6%"
+                : "48%",
+            opacity: hasJoined === JoinStatus.DECLINED ? 0.8 : 1,
           }}
           onPress={joinEvent}
+          disabled={hasJoined !== JoinStatus.PENDING}
         >
-          <Text style={{ color: "white", fontWeight: "bold" }}>Join</Text>
+          {hasJoined === JoinStatus.JOINED && (
+            <Text style={{ color: "white", fontWeight: "bold" }}>
+              {hasJoined === JoinStatus.JOINED ? "Joined" : "Join"}
+            </Text>
+          )}
         </TouchableOpacity>
+
+        {/* Decline Button */}
         <TouchableOpacity
           style={{
             backgroundColor: "#e04e43",
@@ -188,11 +219,22 @@ const EventCard = ({ event, joinEvent }: props) => {
             borderRadius: 8,
             alignItems: "center",
             marginTop: 8,
-            width: "48%",
+            width:
+              hasJoined === JoinStatus.DECLINED
+                ? "94%"
+                : hasJoined === JoinStatus.JOINED
+                ? "6%"
+                : "48%",
+            opacity: hasJoined === JoinStatus.JOINED ? 0.8 : 1,
           }}
           onPress={() => console.log("Decline Event Pressed")}
+          disabled={hasJoined !== JoinStatus.PENDING}
         >
-          <Text style={{ color: "white", fontWeight: "bold" }}>Decline</Text>
+          {hasJoined === JoinStatus.DECLINED && (
+            <Text style={{ color: "white", fontWeight: "bold" }}>
+              {hasJoined === JoinStatus.DECLINED ? "Declined" : "Decline"}
+            </Text>
+          )}
         </TouchableOpacity>
       </View>
     </View>

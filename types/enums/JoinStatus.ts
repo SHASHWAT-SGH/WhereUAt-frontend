@@ -1,5 +1,5 @@
 export enum JoinStatus {
-  PENDING,
-  ACCEPTED,
-  DECLINED,
+  PENDING="PENDING",
+  JOINED="JOINED",
+  DECLINED="DECLINED",
 }
