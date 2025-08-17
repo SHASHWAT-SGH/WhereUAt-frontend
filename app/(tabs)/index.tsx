@@ -46,6 +46,23 @@ const EventsScreen = () => {
     }
   };
 
+  const joinEvent = async (eventId: string) => {
+    try {
+      const res = await api.post("/api/v1/event/join-event", null, {
+        params: {
+          eventId: eventId,
+        },
+      });
+      console.log("Join Event Response: ", res.data);
+      if (res.status === 200) {
+        // if successfully joined, refetch events
+        await fetchEvents();
+      }
+    } catch (error) {
+      console.error("Error joining event:", error);
+    }
+  };
+
   useEffect(() => {
     fetchEvents();
   }, []);
@@ -74,6 +91,7 @@ const EventsScreen = () => {
         setNoEventsFoundTag={setNoEventsFoundTag}
         refreshing={refreshing}
         onRefresh={onRefresh}
+        joinEvent={joinEvent}
       />
     </>
   );

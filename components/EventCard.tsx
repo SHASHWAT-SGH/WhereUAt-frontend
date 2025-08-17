@@ -10,6 +10,7 @@ import React, { useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { EventFormData } from "@/types/EventFormData";
 import { reverseGeocode } from "@/utils/reverseGeocode";
+import { useAuth } from "@/context/AuthContext";
 
 const EventMemberIcon = () => {
   return (
@@ -46,8 +47,12 @@ const EventCard = ({
   eventMembers,
   eventOrganizerId,
   eventTimeStamp,
+  joinEvent,
 }: EventFormData) => {
+  const { user } = useAuth();
+
   const [address, setAddress] = useState<string>("...");
+  const [hasJoined, setHasJoined] = useState<boolean>(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -75,6 +80,8 @@ const EventCard = ({
       isMounted = false;
     };
   }, [eventLatitude, eventLongitude]);
+
+  useEffect(() => {}, []);
 
   return (
     <View style={styles.eventCard}>
@@ -172,7 +179,7 @@ const EventCard = ({
             marginTop: 8,
             width: "48%",
           }}
-          onPress={() => console.log("Join Event Pressed")}
+          onPress={joinEvent}
         >
           <Text style={{ color: "white", fontWeight: "bold" }}>Join</Text>
         </TouchableOpacity>

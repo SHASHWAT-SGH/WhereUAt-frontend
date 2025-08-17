@@ -22,6 +22,7 @@ interface props {
   setNoEventsFoundTag: (fun: any) => void;
   refreshing: boolean;
   onRefresh: () => void;
+  joinEvent: (eventId: string) => void;
 }
 
 const EventsView = ({
@@ -30,6 +31,7 @@ const EventsView = ({
   setNoEventsFoundTag,
   refreshing,
   onRefresh,
+  joinEvent,
 }: props) => {
   useEffect(() => {
     setNoEventsFoundTag(getNoEventsFoundTag());
@@ -79,6 +81,7 @@ const EventsView = ({
                   eventMembers={event.eventMembers}
                   eventOrganizerId={event.eventOrganizerId}
                   eventTimeStamp={event.eventTimeStamp}
+                  joinEvent={() => joinEvent(event.id)}
                 />
               ))}
             </View>

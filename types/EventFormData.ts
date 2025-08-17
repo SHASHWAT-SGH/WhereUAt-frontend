@@ -9,5 +9,6 @@ export interface EventFormData {
   eventImageUrl: string;
   eventOrganizerId: string;
   eventMembers: User[];
+  joinEvent: () => void;
 }
 
