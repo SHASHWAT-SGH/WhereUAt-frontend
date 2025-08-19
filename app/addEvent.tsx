@@ -16,6 +16,7 @@ import { debounce } from "lodash";
 import React, { useEffect, useMemo, useReducer, useState } from "react";
 import { LayoutRectangle, View } from "react-native";
 import { MapPressEvent } from "react-native-maps";
+import { Toast } from "expo-react-native-toastify";
 
 const AddEvent = () => {
   const { user } = useAuth();
@@ -98,11 +99,14 @@ const AddEvent = () => {
         dispatch({ type: "RESET" });
         // navigate to event events page
         router.back();
+        Toast.success("Event created successfully.");
       } else {
         console.error("Failed to create event");
+        Toast.error("Failed to create event.");
       }
     } catch (error) {
       console.error("Error creating event:", error);
+      Toast.error("Failed to create event.");
     }
     setIsAddingEvent(false);
   };
