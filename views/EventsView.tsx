@@ -15,13 +15,15 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { EventDetails } from "@/types/api/event";
 
 interface props {
-  events: any;
+  events: EventDetails[] | null;
   noEventsFoundTag: String;
   setNoEventsFoundTag: (fun: any) => void;
   refreshing: boolean;
   onRefresh: () => void;
+  joinEvent: (eventId: string) => void;
 }
 
 const EventsView = ({
@@ -30,6 +32,7 @@ const EventsView = ({
   setNoEventsFoundTag,
   refreshing,
   onRefresh,
+  joinEvent,
 }: props) => {
   useEffect(() => {
     setNoEventsFoundTag(getNoEventsFoundTag());
@@ -44,6 +47,7 @@ const EventsView = ({
       <FadedLineText text="All Events" />
       <FilterBar />
 
+      {/* if there is no events, show no events found tag */}
       {!events || events.length === 0 ? (
         <>
           <View style={styles.emptyImgContainer}>
@@ -68,8 +72,12 @@ const EventsView = ({
             }
           >
             <View style={{ flex: 1 }}>
-              {events.map((event: any, idx: number) => (
-                <EventCard key={event.id || idx} />
+              {events.map((event: EventDetails, idx: number) => (
+                <EventCard
+                  key={event.event.id || idx}
+                  event={event}
+                  joinEvent={() => joinEvent(event.event.id)}
+                />
               ))}
             </View>
           </ScrollView>
@@ -111,6 +119,8 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 20,
     right: 20,
+    backgroundColor: "white",
+    borderRadius: 50,
   },
 
   emptyImgContainer: {

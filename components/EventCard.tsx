@@ -1,13 +1,10 @@
-import {
-  View,
-  Text,
-  StyleSheet,
-  Image,
-  Touchable,
-  TouchableOpacity,
-} from "react-native";
-import React from "react";
+import { useAuth } from "@/context/AuthContext";
+import { EventDetails, EventMember } from "@/types/api/event";
+import { JoinStatus } from "@/types/enums/JoinStatus";
+import { reverseGeocode } from "@/utils/reverseGeocode";
 import { Ionicons } from "@expo/vector-icons";
+import React, { useEffect, useState } from "react";
+import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 const EventMemberIcon = () => {
   return (
@@ -35,37 +32,115 @@ const EventMemberIcon = () => {
   );
 };
 
-const EventCard = () => {
+interface props {
+  event: EventDetails;
+  joinEvent: () => void;
+}
+
+const EventCard = ({ event, joinEvent }: props) => {
+  const { user } = useAuth();
+
+  const [address, setAddress] = useState<string>("...");
+  const [hasJoined, setHasJoined] = useState<JoinStatus | null>(
+    JoinStatus.PENDING
+  );
+
+  // update location of event when coordinates of event changes
+  useEffect(() => {
+    let isMounted = true;
+    const fetchAddress = async () => {
+      if (event.event.eventLocation) {
+        const result = await reverseGeocode({
+          latitude: event.event.eventLocation.coordinates[1],
+          longitude: event.event.eventLocation.coordinates[0],
+        });
+        if (isMounted) {
+          setAddress(
+            result
+              ? `${result.name || ""} ${result.street || ""}, ${
+                  result.city || ""
+                }, ${result.region || ""}`
+              : "Location not available"
+          );
+        }
+      } else {
+        setAddress("Location not available");
+      }
+    };
+    fetchAddress();
+    return () => {
+      isMounted = false;
+    };
+  }, [event.event.eventLocation]);
+
+  // check if this user has joined the event : set its status
+  useEffect(() => {
+    const _user = event.members?.find(
+      (member: EventMember) => member.userId === user?.user.id
+    );
+    setHasJoined(_user ? _user.status : null);
+  }, [event.members, user?.user.id]);
+
   return (
     <View style={styles.eventCard}>
+      {user?.user.id === event.organizer?.userId && (
+        <View style={styles.organizer}>
+          <Text style={styles.hostText}>Host</Text>
+        </View>
+      )}
       <View style={styles.imgContainer}>
-        <Image
-          source={require("../assets/images/event-placeholder-3.png")}
-          style={{
-            height: "85%",
-            width: 240,
-            borderRadius: 16,
-            resizeMode: "cover",
-          }}
-        />
+        {event.event.eventImageUrl == "" ? (
+          <Image
+            source={require("../assets/images/event-placeholder-3.png")}
+            style={{
+              height: "85%",
+              width: 240,
+              borderRadius: 16,
+              resizeMode: "cover",
+            }}
+          />
+        ) : (
+          <Image
+            source={{
+              uri: event.event.eventImageUrl,
+            }}
+            style={{
+              height: "100%",
+              width: "100%",
+              borderRadius: 16,
+              resizeMode: "cover",
+            }}
+          />
+        )}
         <View style={styles.calender}>
-          <Text style={styles.calenderDay}>08</Text>
-          <Text style={styles.calenderMonth}>Oct</Text>
+          <Text style={styles.calenderDay}>
+            {`${new Date(event.event.eventTimeStamp).getDate()}`.padStart(
+              2,
+              "0"
+            )}
+          </Text>
+          <Text style={styles.calenderMonth}>
+            {new Date(event.event.eventTimeStamp).toLocaleString("default", {
+              month: "short",
+            })}
+          </Text>
         </View>
         <View style={styles.userIconContainer}>
-          <EventMemberIcon />
-          <EventMemberIcon />
-          <EventMemberIcon />
-          <EventMemberIcon />
-          <Text style={styles.userCountText}>+5 others</Text>
+          {event.members &&
+            event.members
+              .slice(0, 4)
+              .map((member, index) => <EventMemberIcon key={index} />)}
+
+          <Text style={styles.userCountText}>
+            {event.members && event.members.length > 4
+              ? `+${event.members.length - 4} others`
+              : ""}
+          </Text>
         </View>
       </View>
 
-      <Text style={styles.heading}>Janvi's Birthday</Text>
-      <Text style={styles.description}>
-        Birthday Party at Janvi's place. Join us for a fun-filled day with
-        friends, food, and festivities. Don't miss out on the cake.
-      </Text>
+      <Text style={styles.heading}>{event.event.eventName}</Text>
+      <Text style={styles.description}>{event.event.eventDescription}</Text>
 
       <View style={styles.infoContainer}>
         <Ionicons
@@ -74,7 +149,8 @@ const EventCard = () => {
           color="#6366f1"
           style={{ marginRight: 4 }}
         />
-        <Text style={styles.infoText}>Meera Colony, BHU, Varanasi</Text>
+
+        <Text style={styles.infoText}>{address}</Text>
       </View>
 
       <View style={styles.infoContainer}>
@@ -85,22 +161,81 @@ const EventCard = () => {
           style={{ marginRight: 4 }}
         />
         <Text style={styles.infoText}>
-          Wednesday, October 08, 2025 · 10:00 PM
+          {new Date(event.event.eventTimeStamp)
+            .toLocaleString("en-US", {
+              weekday: "long",
+              year: "numeric",
+              month: "long",
+              day: "2-digit",
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: true,
+            })
+            .replace("at", " · ")}
         </Text>
       </View>
 
-      <TouchableOpacity
+      <View
         style={{
-          backgroundColor: "#6366f1",
-          paddingVertical: 8,
-          borderRadius: 8,
-          alignItems: "center",
-          marginTop: 8,
+          flexDirection: "row",
+          justifyContent: "space-between",
+          gap: 4,
         }}
-        onPress={() => console.log("Join Event Pressed")}
       >
-        <Text style={{ color: "white", fontWeight: "bold" }}>Join Event</Text>
-      </TouchableOpacity>
+        {/* Join Button */}
+        <TouchableOpacity
+          style={{
+            backgroundColor: "#6366f1",
+            paddingVertical: 8,
+            borderRadius: 8,
+            alignItems: "center",
+            marginTop: 8,
+            width:
+              hasJoined === JoinStatus.JOINED
+                ? "94%"
+                : hasJoined === JoinStatus.DECLINED
+                ? "6%"
+                : "48%",
+            opacity: hasJoined === JoinStatus.DECLINED ? 0.8 : 1,
+          }}
+          onPress={joinEvent}
+          disabled={hasJoined !== JoinStatus.PENDING}
+        >
+          {(hasJoined === JoinStatus.PENDING ||
+            hasJoined === JoinStatus.JOINED) && (
+            <Text style={{ color: "white", fontWeight: "bold" }}>
+              {hasJoined === JoinStatus.JOINED ? "Joined" : "Join"}
+            </Text>
+          )}
+        </TouchableOpacity>
+
+        {/* Decline Button */}
+        <TouchableOpacity
+          style={{
+            backgroundColor: "#e04e43",
+            paddingVertical: 8,
+            borderRadius: 8,
+            alignItems: "center",
+            marginTop: 8,
+            width:
+              hasJoined === JoinStatus.DECLINED
+                ? "94%"
+                : hasJoined === JoinStatus.JOINED
+                ? "6%"
+                : "48%",
+            opacity: hasJoined === JoinStatus.JOINED ? 0.8 : 1,
+          }}
+          onPress={() => console.log("Decline Event Pressed")}
+          disabled={hasJoined !== JoinStatus.PENDING}
+        >
+          {(hasJoined == JoinStatus.PENDING ||
+            hasJoined === JoinStatus.DECLINED) && (
+            <Text style={{ color: "white", fontWeight: "bold" }}>
+              {hasJoined === JoinStatus.DECLINED ? "Declined" : "Decline"}
+            </Text>
+          )}
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
@@ -185,5 +320,20 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "black",
     textAlign: "justify",
+  },
+  organizer: {
+    backgroundColor: "#2a990b",
+    padding: 4,
+    position: "absolute",
+    right: 14,
+    top: 14,
+    zIndex: 1,
+    borderRadius: 6,
+    borderTopRightRadius: 10,
+  },
+  hostText: {
+    color: "white",
+    fontWeight: "300",
+    fontSize: 12,
   },
 });

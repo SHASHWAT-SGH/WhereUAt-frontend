@@ -1,34 +1,33 @@
+import { createEvent } from "@/api/event.api";
+import { searchUsers } from "@/api/user.api";
 import ZoomOverlay from "@/components/ZoomOverlay";
-import { EventFormData } from "@/types/EventFormData";
+import { useAuth } from "@/context/AuthContext";
+import { eventFormReducer } from "@/reducers/eventFormReducer";
+import { CreateEventDTO } from "@/types/api/event";
+import { UserSearchedDTO } from "@/types/api/user";
+import { EventFormState, initialFormState } from "@/types/EventFormState";
+import { User } from "@/types/User";
 import api from "@/utils/axiosInstance";
-import { getCurrentLocation } from "@/utils/getCurrentLocation";
-import { reverseGeocode } from "@/utils/reverseGeocode";
+import { LocationType, reverseGeocode } from "@/utils/reverseGeocode";
 import AddEventView from "@/views/AddEventView";
 import * as Location from "expo-location";
-import React, { useCallback, useEffect, useState } from "react";
-import { LayoutRectangle, StyleSheet, View } from "react-native";
+import { useRouter } from "expo-router";
+import { debounce } from "lodash";
+import React, { useEffect, useMemo, useReducer, useState } from "react";
+import { LayoutRectangle, View } from "react-native";
 import { MapPressEvent } from "react-native-maps";
-import { User } from "@/types/User";
+import { Toast } from "expo-react-native-toastify";
 
 const AddEvent = () => {
+  const { user } = useAuth();
+  const router = useRouter();
+  const [formState, dispatch] = useReducer(eventFormReducer, initialFormState);
+
   const [isTimeModalVisible, setTimeModalIsVisible] = useState<boolean>(false);
   const [isDateModalVisible, setDateModalIsVisible] = useState<boolean>(false);
-  const [date, setDate] = useState<Date>(new Date());
-  const [time, setTime] = useState<Date>(new Date());
   const [location, setLocation] = useState<Location.LocationObject | null>(
     null
   );
-
-  const [selectedLocation, setSelectedLocation] = useState<{
-    latitude: number;
-    longitude: number;
-  } | null>(null);
-
-  const [selectedLocationAddress, setSelectedLocationAddress] = useState<
-    string | null
-  >(null);
-
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const [overlayData, setOverlayData] = useState<{
     origin: LayoutRectangle;
@@ -37,18 +36,13 @@ const AddEvent = () => {
 
   const [isAddingEvent, setIsAddingEvent] = useState<boolean>(false);
 
-  const [formData, setFormData] = useState<EventFormData>({
-    eventName: "",
-    eventDescription: "",
-    eventLatitude: 0,
-    eventLongitude: 0,
-    eventTimeStamp: new Date(),
-    eventImageUrl: "",
-    eventOrganizerId: "",
-    eventMembers: [],
-  });
+  const [searchedUsers, setSearchedUsers] = useState<UserSearchedDTO[] | null>(
+    null
+  );
 
-  const [searchedUsers, setSearchedUsers] = useState<User | null>(null);
+  const handleChange = (field: keyof EventFormState, value: any) => {
+    dispatch({ type: "UPDATE_FIELD", field, value });
+  };
 
   const handleZoomRequest = (
     origin: LayoutRectangle,
@@ -64,57 +58,74 @@ const AddEvent = () => {
 
   const handleMapPress = (event: MapPressEvent) => {
     const { coordinate } = event.nativeEvent;
-    setSelectedLocation({
-      latitude: coordinate.latitude,
-      longitude: coordinate.longitude,
-    });
-
-    setFormData((prevData) => ({
-      ...prevData,
-      eventLatitude: coordinate.latitude,
-      eventLongitude: coordinate.longitude,
-    }));
+    handleChange("eventLatitude", coordinate.latitude);
+    handleChange("eventLongitude", coordinate.longitude);
 
     console.log("Tapped Location: ", coordinate);
   };
 
-  const createEvent = async () => {
-    setIsAddingEvent(true);
+  const getEventDateTime = (date: Date, time: Date): Date => {
+    const combined = new Date(date);
+    combined.setHours(time.getHours());
+    combined.setMinutes(time.getMinutes());
+    combined.setSeconds(time.getSeconds());
+    combined.setMilliseconds(time.getMilliseconds());
+    return combined;
+  };
 
-    const formattedData = {
-      ...formData,
-      eventMembers: formData.eventMembers.map((member) => member.id),
+  const handleCreateEvent = async () => {
+    setIsAddingEvent(true);
+    let eventTimeStamp = getEventDateTime(
+      formState.eventDate,
+      formState.eventTime
+    );
+
+    const createEventDTO: CreateEventDTO = {
+      eventName: formState.eventName,
+      eventDescription: formState.eventDescription,
+      eventLatitude: formState.eventLatitude || 0,
+      eventLongitude: formState.eventLongitude || 0,
+      eventTimeStamp: eventTimeStamp,
+      eventImageUrl: formState.eventImageUrl,
+      eventOrganizerId: user?.user.id || "",
+      eventMembersId: formState.eventMembers.map((member) => member.id),
     };
-    console.log("formattedData: ", formattedData);
 
     try {
-      const response = await api.post("/api/v1/event/create", formattedData);
-      if (response.status === 201) {
-        console.log("Created event: ", response.data);
+      const response = await createEvent(createEventDTO);
+      if (response) {
+        console.log("Event created successfully:", response);
+        // Reset form state after successful event creation
+        dispatch({ type: "RESET" });
+        // navigate to event events page
+        router.back();
+        Toast.success("Event created successfully.");
       } else {
-        console.error("Failed creating event:", response.statusText);
+        console.error("Failed to create event");
+        Toast.error("Failed to create event.");
       }
     } catch (error) {
       console.error("Error creating event:", error);
+      Toast.error("Failed to create event.");
     }
     setIsAddingEvent(false);
   };
 
-  const searchUser = async (query: string) => {
+  const handleSearchUser = async (query: string) => {
     if (query.length < 1) {
       setSearchedUsers(null);
       return;
     }
     try {
-      const response = await api.get(`/api/v1/user/search/${query}`);
-      if (response.status === 200) {
-        if (response.data.length === 0) {
+      const data = await searchUsers(query);
+      if (data) {
+        if (data.length === 0) {
           setSearchedUsers(null);
         } else {
-          setSearchedUsers(response.data);
+          setSearchedUsers(data);
         }
       } else {
-        console.error("Failed to search users:", response.statusText);
+        console.error("Failed to search users:");
         setSearchedUsers(null);
       }
     } catch (error) {
@@ -123,50 +134,62 @@ const AddEvent = () => {
     }
   };
 
-  const handleAddUserPressed = (user: User) => {
-    setFormData((prevData) => ({
-      ...prevData,
-      eventMembers: [...prevData.eventMembers, user],
-    }));
+  // Debounced version of searchUser
+  const debouncedSearchUser = useMemo(
+    () => debounce(handleSearchUser, 500),
+    []
+  );
+
+  // Cleanup debounce on unmount
+  useEffect(() => {
+    return () => {
+      debouncedSearchUser.cancel();
+    };
+  }, []);
+
+  const handleAddUserPressed = (user: UserSearchedDTO) => {
+    if (formState.eventMembers.some((member) => member.id === user.id)) {
+      return;
+    }
+    handleChange("eventMembers", [...formState.eventMembers, user]);
   };
 
   useEffect(() => {
     const handleGetSelectedLocationAddress = async () => {
       try {
+        const selectedLocation: LocationType = {
+          latitude: formState.eventLatitude || 0,
+          longitude: formState.eventLongitude || 0,
+        };
+
         const address = await reverseGeocode(selectedLocation);
         if (address) {
           const formattedAddress = address.formattedAddress;
-          setSelectedLocationAddress(formattedAddress);
+          handleChange("selectedLocationAddress", formattedAddress);
         }
       } catch (error: any) {}
     };
 
     handleGetSelectedLocationAddress();
-  }, [selectedLocation]);
+  }, [formState.eventLatitude, formState.eventLongitude]);
 
   return (
     <View style={{ flex: 1 }}>
       <AddEventView
-        isDateModalVisible={isDateModalVisible}
+        handleChange={handleChange}
         setDateModalIsVisible={setDateModalIsVisible}
-        date={date}
-        setDate={setDate}
-        isTimeModalVisible={isTimeModalVisible}
         setTimeModalIsVisible={setTimeModalIsVisible}
-        time={time}
-        setTime={setTime}
+        isDateModalVisible={isDateModalVisible}
+        isTimeModalVisible={isTimeModalVisible}
+        formState={formState}
+        handleZoomRequest={handleZoomRequest}
         handleMapPress={handleMapPress}
-        location={location}
-        selectedLocation={selectedLocation}
-        onZoomRequest={handleZoomRequest}
-        createEvent={createEvent}
-        isAddingEvent={isAddingEvent}
-        formData={formData}
-        setFormData={setFormData}
-        selectedLocationAddress={selectedLocationAddress}
-        searchUser={searchUser}
+        handleSearchUser={debouncedSearchUser}
         searchedUsers={searchedUsers}
         handleAddUserPressed={handleAddUserPressed}
+        isAddingEvent={isAddingEvent}
+        setIsAddingEvent={setIsAddingEvent}
+        handleCreateEvent={handleCreateEvent}
       />
       {overlayData && (
         <ZoomOverlay origin={overlayData.origin} onClose={handleCloseOverlay}>

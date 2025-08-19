@@ -62,9 +62,11 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       if (isSuccessResponse(response)) {
         // signin to backend
         const res = await api.post("/api/v1/auth/login", {
+          id: response.data.user.id,
           firstName: response.data.user.givenName,
           lastName: response.data.user.familyName,
           userEmail: response.data.user.email,
+          profileImageUrl: response.data.user.photo,
         });
         if (res.status == 200 || res.status == 201) {
           // user already exists or user created successfully
