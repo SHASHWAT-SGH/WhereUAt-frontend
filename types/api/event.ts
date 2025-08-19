@@ -31,3 +31,13 @@ export interface EventDetails {
   members: EventMember[] | null;
 }
 
+export interface CreateEventDTO {
+  eventName: string;
+  eventDescription: string;
+  eventLatitude: number;
+  eventLongitude: number;
+  eventTimeStamp: Date; 
+  eventImageUrl: string;
+  eventOrganizerId: string;
+  eventMembersId: string[];
+}

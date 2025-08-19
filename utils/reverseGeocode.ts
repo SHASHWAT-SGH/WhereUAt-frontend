@@ -1,11 +1,11 @@
 import * as Location from "expo-location";
 
-interface locationType {
+export interface LocationType {
   latitude: number;
   longitude: number;
 }
 
-export const reverseGeocode = async (location: locationType|null) => {
+export const reverseGeocode = async (location: LocationType | null) => {
   try {
     if(location){
       const geocode = await Location.reverseGeocodeAsync(location);

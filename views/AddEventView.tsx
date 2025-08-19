@@ -1,16 +1,15 @@
 import AddedUser from "@/components/AddedUser";
 import FadedLineText from "@/components/FadedLineText";
 import ZoomableCard from "@/components/ZoomableCard";
-import { EventFormData } from "@/types/EventFormData";
-import { User } from "@/types/User";
+import { useLocation } from "@/context/LocationContext";
+import { UserSearchedDTO } from "@/types/api/user";
+import { EventFormState } from "@/types/EventFormState";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { LocationObject } from "expo-location";
 import React from "react";
 import {
   ActivityIndicator,
   LayoutRectangle,
   Pressable,
-  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -21,55 +20,42 @@ import {
 import MapView, { MapPressEvent, Marker } from "react-native-maps";
 
 interface props {
-  isDateModalVisible: boolean;
+  handleChange: (field: keyof EventFormState, value: any) => void;
   setDateModalIsVisible: (visible: boolean) => void;
-  date: Date;
-  setDate: (date: Date) => void;
-  isTimeModalVisible: boolean;
   setTimeModalIsVisible: (visible: boolean) => void;
-  time: Date;
-  setTime: (time: Date) => void;
-  handleMapPress: (event: MapPressEvent) => void;
-  location: LocationObject | null;
-  selectedLocation: {
-    latitude: number;
-    longitude: number;
-  } | null;
-  onZoomRequest: (origin: LayoutRectangle, content: React.ReactNode) => void;
-  createEvent: () => Promise<void>;
-  isAddingEvent: boolean;
-  formData: EventFormData;
-  setFormData: (
-    data: EventFormData | ((prevData: EventFormData) => EventFormData)
+  isTimeModalVisible: boolean;
+  isDateModalVisible: boolean;
+  formState: EventFormState;
+  handleZoomRequest: (
+    origin: LayoutRectangle,
+    content: React.ReactNode
   ) => void;
-  selectedLocationAddress: string | null;
-  searchUser: (text: string) => void;
-  searchedUsers: any; // Adjust type as needed
-  handleAddUserPressed: (user: User) => void; // Function to handle adding a user
+  handleMapPress: (event: MapPressEvent) => void;
+  handleSearchUser: (query: string) => void;
+  searchedUsers: UserSearchedDTO[] | null;
+  handleAddUserPressed: (user: UserSearchedDTO) => void;
+  isAddingEvent: boolean;
+  setIsAddingEvent: (isAdding: boolean) => void;
+  handleCreateEvent: () => void;
 }
 
 const AddEventView = ({
-  isDateModalVisible,
+  handleChange,
   setDateModalIsVisible,
-  date,
-  setDate,
-  isTimeModalVisible,
   setTimeModalIsVisible,
-  time,
-  setTime,
+  isTimeModalVisible,
+  isDateModalVisible,
+  formState,
+  handleZoomRequest,
   handleMapPress,
-  location,
-  selectedLocation,
-  onZoomRequest,
-  createEvent,
-  isAddingEvent,
-  formData,
-  setFormData,
-  selectedLocationAddress,
-  searchUser,
+  handleSearchUser,
   searchedUsers,
   handleAddUserPressed,
+  isAddingEvent,
+  setIsAddingEvent,
+  handleCreateEvent,
 }: props) => {
+  const { location } = useLocation();
   return (
     <>
       <ScrollView
@@ -84,10 +70,7 @@ const AddEventView = ({
         <TextInput
           style={styles.inputBox}
           onChangeText={(text) => {
-            setFormData((prevData) => ({
-              ...prevData,
-              eventName: text,
-            }));
+            handleChange("eventName", text);
           }}
         />
         <Text style={styles.formText}>Event Description</Text>
@@ -97,10 +80,7 @@ const AddEventView = ({
           numberOfLines={3}
           maxLength={200}
           onChangeText={(text) => {
-            setFormData((prevData) => ({
-              ...prevData,
-              eventDescription: text,
-            }));
+            handleChange("eventDescription", text);
           }}
         />
         <Text style={styles.formText}>Event Date</Text>
@@ -111,7 +91,7 @@ const AddEventView = ({
           }}
         >
           <Text>
-            {date.toLocaleDateString("en-US", {
+            {formState.eventDate.toLocaleDateString("en-US", {
               year: "numeric",
               month: "2-digit",
               day: "2-digit",
@@ -120,22 +100,13 @@ const AddEventView = ({
         </Pressable>
         {isDateModalVisible && (
           <DateTimePicker
-            value={date}
+            value={formState.eventDate}
             mode="date"
             display="default"
             onChange={(event, selectedDate) => {
               setDateModalIsVisible(false);
               if (selectedDate) {
-                const updated = new Date(date);
-                updated.setFullYear(selectedDate.getFullYear());
-                updated.setMonth(selectedDate.getMonth());
-                updated.setDate(selectedDate.getDate());
-
-                setDate(selectedDate);
-                setFormData((prevData) => ({
-                  ...prevData,
-                  eventTimeStamp: updated,
-                }));
+                handleChange("eventDate", selectedDate);
               }
             }}
           />
@@ -148,7 +119,7 @@ const AddEventView = ({
           }}
         >
           <Text>
-            {time.toLocaleTimeString("en-US", {
+            {formState.eventTime.toLocaleTimeString("en-US", {
               hour: "2-digit",
               minute: "2-digit",
               hour12: true,
@@ -157,24 +128,14 @@ const AddEventView = ({
         </Pressable>
         {isTimeModalVisible && (
           <DateTimePicker
-            value={time}
+            value={formState.eventTime}
             mode="time"
             display="spinner"
             is24Hour={false}
             onChange={(event, selectedTime) => {
               setTimeModalIsVisible(false);
               if (selectedTime) {
-                const updated = new Date(time);
-                updated.setHours(selectedTime.getHours());
-                updated.setMinutes(selectedTime.getMinutes());
-                updated.setSeconds(selectedTime.getSeconds());
-                updated.setMilliseconds(0);
-
-                setTime(selectedTime);
-                setFormData((prevData) => ({
-                  ...prevData,
-                  eventTimeStamp: updated,
-                }));
+                handleChange("eventTime", selectedTime);
               }
             }}
           />
@@ -182,12 +143,14 @@ const AddEventView = ({
         {/* Maps */}
         <View style={{ flexDirection: "row", gap: 6 }}>
           <Text style={styles.formText}>
-            Event Location {selectedLocation ? ":" : ""}
+            Event Location {formState.selectedLocationAddress ? ":" : ""}
           </Text>
-          <Text style={styles.formText}>{selectedLocationAddress || ""}</Text>
+          <Text style={styles.formText}>
+            {formState.selectedLocationAddress || ""}
+          </Text>
         </View>
         {/* Use the updated ZoomableCard */}
-        <ZoomableCard onZoomRequest={onZoomRequest}>
+        <ZoomableCard onZoomRequest={handleZoomRequest}>
           <MapView
             style={styles.map}
             provider="google"
@@ -216,14 +179,14 @@ const AddEventView = ({
             zoomTapEnabled={true}
             onPress={handleMapPress}
           >
-            {selectedLocation && (
+            {formState.eventLatitude && formState.eventLongitude && (
               <Marker
                 coordinate={{
-                  latitude: selectedLocation.latitude,
-                  longitude: selectedLocation.longitude,
+                  latitude: formState.eventLatitude,
+                  longitude: formState.eventLongitude,
                 }}
                 title="Selected Location"
-                description={`Lat: ${selectedLocation.latitude}, Lng: ${selectedLocation.longitude}`}
+                description={`Lat: ${formState.eventLatitude}, Lng: ${formState.eventLongitude}`}
               />
             )}
           </MapView>
@@ -237,17 +200,22 @@ const AddEventView = ({
           keyboardType="email-address"
           autoCapitalize="none"
           onChangeText={(text) => {
-            searchUser(text);
+            handleSearchUser(text);
           }}
         />
         {searchedUsers && searchedUsers.length > 0 ? (
-          searchedUsers.map((user: any) => (
+          searchedUsers.map((user: UserSearchedDTO) => (
             <AddedUser
               key={user.id}
               name={user.firstName + " " + user.lastName}
               email={user.userEmail}
-              imageUri="https://cdn-icons-png.flaticon.com/512/9187/9187604.png"
-              isSelected={formData.eventMembers.includes(user)}
+              imageUri={
+                user.profileImageUrl ||
+                "https://cdn-icons-png.flaticon.com/512/9187/9187604.png"
+              }
+              isSelected={formState.eventMembers.some(
+                (member) => member.id === user.id
+              )}
               onPress={() => handleAddUserPressed(user)}
             />
           ))
@@ -256,13 +224,18 @@ const AddEventView = ({
         )}
         <FadedLineText text="Selected Users" />
         <View style={{ gap: 10, marginTop: 10 }}>
-          {formData.eventMembers.map((user, index) => (
+          {formState.eventMembers.map((user: UserSearchedDTO) => (
             <AddedUser
               key={user.id}
               name={user.firstName + " " + user.lastName}
               email={user.userEmail}
-              imageUri="https://cdn-icons-png.flaticon.com/512/9187/9187604.png"
-              isSelected={formData.eventMembers.includes(user)}
+              imageUri={
+                user.profileImageUrl ||
+                "https://cdn-icons-png.flaticon.com/512/9187/9187604.png"
+              }
+              isSelected={formState.eventMembers.some(
+                (member) => member.id === user.id
+              )}
               onPress={() => handleAddUserPressed(user)}
             />
           ))}
@@ -274,7 +247,7 @@ const AddEventView = ({
           disabled={isAddingEvent}
           onPress={() => {
             // Handle form submission logic here
-            createEvent();
+            handleCreateEvent();
             console.log("Event Created");
           }}
         >

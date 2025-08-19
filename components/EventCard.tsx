@@ -1,18 +1,10 @@
-import {
-  View,
-  Text,
-  StyleSheet,
-  Image,
-  Touchable,
-  TouchableOpacity,
-} from "react-native";
-import React, { useEffect, useState } from "react";
-import { Ionicons } from "@expo/vector-icons";
-import { EventFormData } from "@/types/EventFormData";
-import { reverseGeocode } from "@/utils/reverseGeocode";
 import { useAuth } from "@/context/AuthContext";
 import { EventDetails, EventMember } from "@/types/api/event";
 import { JoinStatus } from "@/types/enums/JoinStatus";
+import { reverseGeocode } from "@/utils/reverseGeocode";
+import { Ionicons } from "@expo/vector-icons";
+import React, { useEffect, useState } from "react";
+import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 const EventMemberIcon = () => {
   return (
@@ -91,6 +83,11 @@ const EventCard = ({ event, joinEvent }: props) => {
 
   return (
     <View style={styles.eventCard}>
+      {user?.user.id === event.organizer?.userId && (
+        <View style={styles.organizer}>
+          <Text style={styles.hostText}>Host</Text>
+        </View>
+      )}
       <View style={styles.imgContainer}>
         {event.event.eventImageUrl == "" ? (
           <Image
@@ -204,7 +201,8 @@ const EventCard = ({ event, joinEvent }: props) => {
           onPress={joinEvent}
           disabled={hasJoined !== JoinStatus.PENDING}
         >
-          {hasJoined === JoinStatus.JOINED && (
+          {(hasJoined === JoinStatus.PENDING ||
+            hasJoined === JoinStatus.JOINED) && (
             <Text style={{ color: "white", fontWeight: "bold" }}>
               {hasJoined === JoinStatus.JOINED ? "Joined" : "Join"}
             </Text>
@@ -230,7 +228,8 @@ const EventCard = ({ event, joinEvent }: props) => {
           onPress={() => console.log("Decline Event Pressed")}
           disabled={hasJoined !== JoinStatus.PENDING}
         >
-          {hasJoined === JoinStatus.DECLINED && (
+          {(hasJoined == JoinStatus.PENDING ||
+            hasJoined === JoinStatus.DECLINED) && (
             <Text style={{ color: "white", fontWeight: "bold" }}>
               {hasJoined === JoinStatus.DECLINED ? "Declined" : "Decline"}
             </Text>
@@ -321,5 +320,20 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "black",
     textAlign: "justify",
+  },
+  organizer: {
+    backgroundColor: "#2a990b",
+    padding: 4,
+    position: "absolute",
+    right: 14,
+    top: 14,
+    zIndex: 1,
+    borderRadius: 6,
+    borderTopRightRadius: 10,
+  },
+  hostText: {
+    color: "white",
+    fontWeight: "300",
+    fontSize: 12,
   },
 });
